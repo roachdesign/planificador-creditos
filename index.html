@@ -35,24 +35,32 @@
         }
 
         .totals-bar {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: #2d3748;
-            padding: 15px 20px;
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
-            z-index: 1000;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            max-width: 600px;
-            margin: 0 auto;
-            left: 50%;
-            transform: translateX(-50%);
-            border-radius: 20px 20px 0 0;
-            border-top: 1px solid #4a5568;
-        }
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #2d3748;
+    padding: 15px 25px; /* Aumenté el padding horizontal */
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
+    z-index: 1000;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 100%; /* Ocupa todo el ancho en mobile */
+    width: 100%;
+    margin: 0 auto;
+    border-radius: 20px 20px 0 0;
+    border-top: 1px solid #4a5568;
+    gap: 20px; /* Espacio entre elementos */
+}
+
+@media (min-width: 601px) {
+    .totals-bar {
+        max-width: 600px; /* En desktop mantiene el límite */
+        left: 50%;
+        transform: translateX(-50%);
+    }
+}
 
         .totals-info {
             flex: 1;
@@ -73,17 +81,19 @@
             text-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
 
-        .btn-clear {
-            background: #4a5568;
-            color: white;
-            border: 2px solid #718096;
-            padding: 12px 20px;
-            border-radius: 25px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-size: 0.9rem;
-        }
+       .btn-clear {
+    background: #4a5568;
+    color: white;
+    border: 2px solid #718096;
+    padding: 10px 16px; /* Un poco más chico */
+    border-radius: 25px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.85rem; /* Letra un poco más chica */
+    white-space: nowrap; /* Evita que se parta en dos líneas */
+    flex-shrink: 0; /* No se encoge */
+}
 
         .btn-clear:hover {
             background: #718096;
@@ -1524,3 +1534,4 @@ function renderFoods() {
 </body>
 
 </html>
+
