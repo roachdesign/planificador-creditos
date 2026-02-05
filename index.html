@@ -1,0 +1,1514 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#2d3748">
+    <title>Planificador de Créditos - Dieta</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            padding-bottom: 100px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .totals-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #2d3748;
+            padding: 15px 20px;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 600px;
+            margin: 0 auto;
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 20px 20px 0 0;
+            border-top: 1px solid #4a5568;
+        }
+
+        .totals-info {
+            flex: 1;
+        }
+
+        .totals-label {
+            font-size: 0.8rem;
+            color: #a0aec0;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .totals-number {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #ffffff;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .btn-clear {
+            background: #4a5568;
+            color: white;
+            border: 2px solid #718096;
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .btn-clear:hover {
+            background: #718096;
+            border-color: #a0aec0;
+            transform: scale(1.05);
+        }
+
+        .search-box {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .filter-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .filter-btn.active {
+            box-shadow: 0 0 0 3px rgba(255,255,255,0.5);
+        }
+
+        .filter-verde { background: #4CAF50; color: white; }
+        .filter-amarillo { background: #FFC107; color: black; }
+        .filter-rojo { background: #f44336; color: white; }
+        .filter-todos { background: #607D8B; color: white; }
+
+        .food-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .food-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border-left: 5px solid;
+        }
+
+        .food-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+
+        .food-card.verde { border-left-color: #4CAF50; }
+        .food-card.amarillo { border-left-color: #FFC107; }
+        .food-card.rojo { border-left-color: #f44336; }
+
+        .food-info {
+            flex: 1;
+        }
+
+        .food-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 4px;
+            text-transform: capitalize;
+        }
+
+        .food-portion {
+            font-size: 0.9rem;
+            color: #666;
+            line-height: 1.3;
+        }
+
+        .food-credits {
+            text-align: right;
+            margin-left: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 5px;
+        }
+
+        .credits-number {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #333;
+        }
+
+        .credits-label {
+            font-size: 0.7rem;
+            color: #999;
+            text-transform: uppercase;
+        }
+
+        .quality-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-top: 5px;
+        }
+
+        .badge-verde { background: #E8F5E9; color: #2E7D32; }
+        .badge-amarillo { background: #FFF8E1; color: #F57F17; }
+        .badge-rojo { background: #FFEBEE; color: #C62828; }
+
+        .quantity-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .btn-quantity {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: none;
+            background: #667eea;
+            color: white;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        .btn-quantity:hover {
+            transform: scale(1.1);
+            background: #5a6fd6;
+        }
+
+        .btn-quantity:active {
+            transform: scale(0.95);
+        }
+
+        .quantity-display {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #333;
+            min-width: 30px;
+            text-align: center;
+        }
+
+        .subtotal {
+            font-size: 0.9rem;
+            color: #667eea;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        .no-results {
+            text-align: center;
+            color: white;
+            padding: 40px;
+            font-size: 1.1rem;
+        }
+
+        .stats {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .selected-section {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: none;
+        }
+
+        .selected-section.has-items {
+            display: block;
+        }
+
+        .selected-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .selected-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .selected-item-info {
+            flex: 1;
+        }
+
+        .selected-item-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .selected-item-details {
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .selected-item-credits {
+            font-weight: 700;
+            color: #667eea;
+            font-size: 1.1rem;
+        }
+
+        @media (max-width: 480px) {
+            h1 { font-size: 1.5rem; }
+            .food-name { font-size: 1rem; }
+            .credits-number { font-size: 1.3rem; }
+            .totals-number { font-size: 1.5rem; }
+            .btn-clear { padding: 10px 15px; font-size: 0.85rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🥗 Planificador de Créditos</h1>
+        
+        <div class="stats" id="stats">
+            Mostrando <span id="count">0</span> alimentos
+        </div>
+
+        <div class="selected-section" id="selectedSection">
+            <div class="selected-title">
+                <span>📋</span>
+                <span>Tu selección de hoy</span>
+            </div>
+            <div id="selectedList"></div>
+        </div>
+
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Buscar alimento..." autocomplete="off">
+            <div class="filters">
+                <button class="filter-btn filter-todos active" onclick="filterByColor('todos')">Todos</button>
+                <button class="filter-btn filter-verde" onclick="filterByColor('verde')">Verde</button>
+                <button class="filter-btn filter-amarillo" onclick="filterByColor('amarillo')">Amarillo</button>
+                <button class="filter-btn filter-rojo" onclick="filterByColor('rojo')">Rojo</button>
+            </div>
+        </div>
+
+        <div class="food-list" id="foodList"></div>
+        
+        <div class="no-results" id="noResults" style="display: none;">
+            No se encontraron alimentos 😕
+        </div>
+    </div>
+
+    <div class="totals-bar">
+        <div class="totals-info">
+            <div class="totals-label">Total de créditos</div>
+            <div class="totals-number" id="totalCredits">0</div>
+        </div>
+        <button class="btn-clear" onclick="clearAll()">🗑️ Limpiar</button>
+    </div>
+
+    <script>
+        // Base de datos completa con 968 alimentos
+        const alimentos = [
+            { id: 1, nombre: "abadejo", porcion: "1 filet grande (aprox. 150 gr)", creditos: 1.5, calidad: "Verde" },
+            { id: 2, nombre: "aceite de canola", porcion: "1 cda. tamaño postre (aprox. 10 gr)", creditos: 1.75, calidad: "Rojo" },
+            { id: 3, nombre: "aceite de girasol", porcion: "1 cda. tamaño postre (aprox. 10 gr)", creditos: 2.25, calidad: "Rojo" },
+            { id: 4, nombre: "Aceite de Girasol, uva y maíz", porcion: "1 Cda postre", creditos: 2.5, calidad: "Rojo" },
+            { id: 5, nombre: "aceite de girasol, uva y maíz", porcion: "1 cda. tamaño postre (aprox. 10 gr)", creditos: 2.5, calidad: "Rojo" },
+            { id: 6, nombre: "aceite de maní", porcion: "1 cda. tamaño postre (aprox. 10 gr)", creditos: 2, calidad: "Rojo" },
+            { id: 7, nombre: "aceite de oliva", porcion: "1 cda. tamaño postre (aprox. 10 gr)", creditos: 2, calidad: "Rojo" },
+            { id: 8, nombre: "Aceite de Oliva y Soja", porcion: "1 Cda postre", creditos: 2, calidad: "Rojo" },
+            { id: 9, nombre: "aceite de soja", porcion: "1 cda. tamaño postre (aprox. 10 gr)", creditos: 2, calidad: "Rojo" },
+            { id: 10, nombre: "aceite de uva", porcion: "1 cda. tamaño postre (aprox. 10 gr)", creditos: 2.25, calidad: "Rojo" },
+            { id: 11, nombre: "aceite mezcla", porcion: "1 cda. tamaño postre (aprox. 10 gr)", creditos: 2.25, calidad: "Rojo" },
+            { id: 12, nombre: "Aceituna Negra", porcion: "1 unidad", creditos: 0.5, calidad: "Amarillo" },
+            { id: 13, nombre: "Aceituna verde", porcion: "1 unidad", creditos: 0.25, calidad: "Amarillo" },
+            { id: 14, nombre: "aceitunas negras", porcion: "1 unidad (aprox. 5 gr )", creditos: 0.5, calidad: "Amarillo" },
+            { id: 15, nombre: "aceitunas verdes", porcion: "1 unidad (aprox. 5 gr )", creditos: 0.25, calidad: "Amarillo" },
+            { id: 16, nombre: "acelga", porcion: "1 taza de té en cocido (aprox. 200 gr)", creditos: 0, calidad: "Verde" },
+            { id: 17, nombre: "Aceto balsamico", porcion: "1 Cda postre", creditos: 0, calidad: "Verde" },
+            { id: 18, nombre: "aceto balsámico", porcion: "1 cda. tamaño postre (aprox. 10 gr)", creditos: 0, calidad: "Verde" },
+            { id: 19, nombre: "achicoria", porcion: "1 plato de postre (aprox 50 gr)", creditos: 0, calidad: "Verde" },
+            { id: 20, nombre: "Actimel 0% grasa y colesterol", porcion: "1 potecito de 100 gr", creditos: 0.5, calidad: "Verde" },
+            { id: 21, nombre: "Actimel común", porcion: "1 potecito de 100 gr", creditos: 2.5, calidad: "Verde" },
+            { id: 22, nombre: "Activia", porcion: "1 pote de 200 gr", creditos: 3, calidad: "Verde" },
+            { id: 23, nombre: "aderezo a base de hierbas light", porcion: "1 vaso (150 cm3)", creditos: 0.5, calidad: "Verde" },
+            { id: 24, nombre: "aderezo light para ensalada", porcion: "1 cda. tamaño postre (aprox. 10 gr)", creditos: 0, calidad: "Verde" },
+            { id: 25, nombre: "Aderezo light para ensaladas", porcion: "1 Cda postre", creditos: 0, calidad: "Verde" },
+            { id: 26, nombre: "agar agar", porcion: "1 cdta café", creditos: 0, calidad: "Verde" },
+            { id: 27, nombre: "agua saborizada", porcion: "1 vaso (aprox. 250 cm3)", creditos: 2.5, calidad: "Verde" },
+            { id: 28, nombre: "agua saborizada 0%", porcion: "1 vaso (aprox. 250 cm3)", creditos: 0, calidad: "Verde" },
+            { id: 29, nombre: "agua saborizada baja en azúcar", porcion: "1 vaso (aprox. 250 cm3)", creditos: 0.5, calidad: "Verde" },
+            { id: 30, nombre: "agua tónica", porcion: "1 vaso (aprox. 250 cm3)", creditos: 2.5, calidad: "Verde" },
+            { id: 31, nombre: "ají", porcion: "1 unidad chica (aprox. 100 gr)", creditos: 0, calidad: "Verde" },
+            { id: 32, nombre: "ají morrón", porcion: "1 unidad chica (aprox. 50 gr)", creditos: 0, calidad: "Verde" },
+            { id: 33, nombre: "ajo", porcion: "1 diente", creditos: 0, calidad: "Verde" },
+            { id: 34, nombre: "albóndiga de carne magra", porcion: "1 unidad (aprox. 80 gr)", creditos: 2, calidad: "Verde" },
+            { id: 35, nombre: "alcaucil", porcion: "1 unidad (aprox. 100 gr)", creditos: 0, calidad: "Verde" },
+            { id: 36, nombre: "alfajor chico El Rosario", porcion: "1 unidad de 35 gr", creditos: 2.5, calidad: "Amarillo" },
+            { id: 37, nombre: "alfajor choco-arroz (marca Deli light)", porcion: "1 unidad de 26 gr", creditos: 2, calidad: "Amarillo" },
+            { id: 38, nombre: "alfajor de dulce de leche", porcion: "1 unidad", creditos: 5.5, calidad: "Amarillo" },
+            { id: 39, nombre: "alfajor de dulce de leche blanco", porcion: "1 unidad (aprox. 50 grs.)", creditos: 5.5, calidad: "Amarillo" },
+            { id: 40, nombre: "alfajor de dulce de leche c/ baño", porcion: "1 unidad (aprox 50 gr)", creditos: 5.75, calidad: "Amarillo" },
+            { id: 41, nombre: "alfajor de dulce de leche c/ chocolate", porcion: "1 unidad (aprox 50 gr)", creditos: 6.25, calidad: "Amarillo" },
+            { id: 42, nombre: "Alfajor de Dulce de leche con chocolate", porcion: "1 unidad", creditos: 6, calidad: "Amarillo" },
+            { id: 43, nombre: "alfajor de maicena", porcion: "1 unidad (aprox. 50 grs.)", creditos: 4.25, calidad: "Amarillo" },
+            { id: 44, nombre: "alfajor light (Cormillot)", porcion: "1 unidad (aprox. 42 gr)", creditos: 4.25, calidad: "Amarillo" },
+            { id: 45, nombre: "Alfajor light Cormillot", porcion: "1 unidad", creditos: 4, calidad: "Amarillo" },
+            { id: 46, nombre: "alfajor Ser", porcion: "1 unidad (aprox. 42 gr)", creditos: 5.5, calidad: "Amarillo" },
+            { id: 47, nombre: "alfajorcito relleno con maní y cacao bañado c/ chocolate", porcion: "1 unidad (aprox. 30 grs.)", creditos: 3.75, calidad: "Amarillo" },
+            { id: 48, nombre: "alimentos a base de trigo y soja", porcion: "1 taza tamañe té cocido (aprox. 50 gr)", creditos: 2, calidad: "Amarillo" },
+            { id: 49, nombre: "all bran", porcion: "1 taza tamaño té (aprox. 30 gr)", creditos: 1.75, calidad: "Amarillo" },
+            { id: 50, nombre: "all bran plus", porcion: "1 cucharada sopera", creditos: 0.5, calidad: "Amarillo" },
+            { id: 51, nombre: "almendrado  (helado)", porcion: "1 unidad (aprox. 100 gr)", creditos: 6.75, calidad: "Amarillo" },
+            { id: 52, nombre: "almendrado c/ salsa de chocolate", porcion: "1 unidad (455 cal.)", creditos: 17, calidad: "Rojo" },
+            { id: 53, nombre: "almendras", porcion: "1 cda sopera = 10 undes. (aprox. 10 g)", creditos: 1.5, calidad: "Rojo" },
+            { id: 54, nombre: "almidón de maíz (fécula)", porcion: "1 cda. sopera (aprox. 10 gr)", creditos: 0.75, calidad: "Amarillo" },
+            { id: 55, nombre: "almohaditas de avena rellenas de", porcion: "1 taza (aprox. 30 gr)", creditos: 4.5, calidad: "Rojo" },
+            { id: 56, nombre: "amaranto", porcion: "1 cda. sopera  (aprox. 10 gr)", creditos: 1, calidad: "Amarillo" },
+            { id: 57, nombre: "amargo serrano light", porcion: "1 vaso", creditos: 0, calidad: "Verde" },
+            { id: 58, nombre: "ananá", porcion: "1 rodaja (aprox. 100 grs.)", creditos: 1, calidad: "Verde" },
+            { id: 59, nombre: "ananá en almíbar", porcion: "1 rodaja (aprox. 50 grs.)", creditos: 1, calidad: "Verde" },
+            { id: 60, nombre: "ananá en almíbar light", porcion: "1 rodaja (aprox. 50 grs.)", creditos: 0.5, calidad: "Verde" },
+            { id: 61, nombre: "anchoa", porcion: "1 filete grande (aprox. 150 gr)", creditos: 1.75, calidad: "Verde" },
+            { id: 62, nombre: "anchoas al natural", porcion: "1 porción de 100 gr", creditos: 1, calidad: "Verde" },
+            { id: 63, nombre: "anchoas en aceite", porcion: "1 lata chica (150 gr) (6 cr c/ 100 gr)", creditos: 9, calidad: "Amarillo" },
+            { id: 64, nombre: "apio", porcion: "1 penca", creditos: 0, calidad: "Verde" },
+            { id: 65, nombre: "arándanos", porcion: "1 taza de té (aprox. 100 grs.)", creditos: 0, calidad: "Verde" },
+            { id: 66, nombre: "arenque", porcion: "1 filet grande (aprox. 150 gr)", creditos: 3.75, calidad: "Verde" },
+            { id: 67, nombre: "aros de cebolla", porcion: "1 porción (aprox. 90 gr)", creditos: 8, calidad: "Amarillo" },
+            { id: 68, nombre: "arroz blanco", porcion: "1 plato tamaño postre (aprox. 33 gr)", creditos: 4, calidad: "Amarillo" },
+            { id: 69, nombre: "arroz con leche", porcion: "1 taza de té (aprox. 150 grs.)", creditos: 7, calidad: "Amarillo" },
+            { id: 70, nombre: "arroz con leche light", porcion: "1 pote", creditos: 2.5, calidad: "Verde" },
+            { id: 71, nombre: "arroz integral", porcion: "1 plato tamaño postre (aprox. 33 gr)", creditos: 2.75, calidad: "Amarillo" },
+            { id: 72, nombre: "arroz parbolizado", porcion: "1 porción en cocido (1 pto. postre)", creditos: 4, calidad: "Amarillo" },
+            { id: 73, nombre: "arroz yamani", porcion: "1 porción en cocido (1 pto. postre)", creditos: 2.75, calidad: "Amarillo" },
+            { id: 74, nombre: "arvejas secas", porcion: "1 taza tam. té en cocido (aprox. 33 gr)", creditos: 2.25, calidad: "Amarillo" },
+            { id: 75, nombre: "Atún al natural", porcion: "1 Lata chica", creditos: 2, calidad: "Verde" },
+            { id: 76, nombre: "atún al natural", porcion: "1 lata chica (aprox. 120 gr)", creditos: 1.5, calidad: "Verde" },
+            { id: 77, nombre: "atún en aceite", porcion: "1 lata chica (aprox. 120 gr)", creditos: 6, calidad: "Amarillo" },
+            { id: 78, nombre: "atún en salsa de tomate", porcion: "1 lata chica", creditos: 5.5, calidad: "Amarillo" },
+            { id: 79, nombre: "atún fresco", porcion: "1 filete grande", creditos: 1.5, calidad: "Verde" },
+            { id: 80, nombre: "avellanas", porcion: "1 cucharada sopera (10 avellanas)", creditos: 1.75, calidad: "Rojo" },
+            { id: 81, nombre: "avena arrollada", porcion: "1 cucharada sopera (aprox. 10 gr)", creditos: 1, calidad: "Amarillo" },
+            { id: 82, nombre: "avena entera", porcion: "1 cucharada sopera", creditos: 0.75, calidad: "Amarillo" },
+            { id: 83, nombre: "azúcar", porcion: "1 cucharadita de té (aprox. 5 grs.)", creditos: 0.5, calidad: "Amarillo" },
+            { id: 84, nombre: "Azucar blanca", porcion: "1 dta de té", creditos: 0.5, calidad: "Amarillo" },
+            { id: 85, nombre: "azúcar impalpable", porcion: "1 cda tipo té", creditos: 0.5, calidad: "Amarillo" },
+            { id: 86, nombre: "azúcar light", porcion: "1 cucharadita de té (aprox. 5 grs.)", creditos: 0.25, calidad: "Amarillo" },
+            { id: 87, nombre: "azúcar morena", porcion: "1 cucharada de postre (aprox. 10 grs.)", creditos: 1, calidad: "Amarillo" },
+            { id: 88, nombre: "bacalao", porcion: "1 filet grande (aprox. 150 gr)", creditos: 1.5, calidad: "Verde" },
+            { id: 89, nombre: "banana", porcion: "1 unidad chica (aprox. 120 gr)", creditos: 2.5, calidad: "Verde" },
+            { id: 90, nombre: "bananita chica bañada de chocolate", porcion: "1 unidad (aprox. 14 gr)", creditos: 1.75, calidad: "Amarillo" },
+            { id: 91, nombre: "bananita grande bañada de chocolate", porcion: "1 unidad grande (aprox. 30 gr)", creditos: 3.75, calidad: "Amarillo" },
+            { id: 92, nombre: "barra de cereal c/ omega 3 Cormillot", porcion: "1 unidad", creditos: 1.5, calidad: "Amarillo" },
+            { id: 93, nombre: "barra de cereal con chocolate", porcion: "1 unidad", creditos: 3, calidad: "Amarillo" },
+            { id: 94, nombre: "barra de cereal con coco", porcion: "1 unidad (aprox 22 gr)", creditos: 3, calidad: "Amarillo" },
+            { id: 95, nombre: "barra de cereal con frutas", porcion: "1 unidad", creditos: 2.5, calidad: "Amarillo" },
+            { id: 96, nombre: "barra de cereal con leche", porcion: "1 unidad (aprox 21 gr)", creditos: 2.25, calidad: "Amarillo" },
+            { id: 97, nombre: "Barra de cereal con Yogurt", porcion: "1 unidad", creditos: 3.5, calidad: "Amarillo" },
+            { id: 98, nombre: "barra de cereal Cormillot", porcion: "1 unidad (aprox. 20 gr)", creditos: 2, calidad: "Amarillo" },
+            { id: 99, nombre: "Barra de cereal Light", porcion: "1 unidad", creditos: 2, calidad: "Amarillo" },
+            { id: 100, nombre: "barra de cereal light", porcion: "1 unidad (aprox. 23 gr)", creditos: 2, calidad: "Amarillo" },
+            { id: 101, nombre: "barra de cereal light c/ calcio y fibras", porcion: "1 unidad (aprox. 23 gr)", creditos: 1.5, calidad: "Amarillo" },
+            { id: 102, nombre: "barra de cereal tradicional", porcion: "1 unidad (aprox. 23 gr)", creditos: 2.75, calidad: "Amarillo" },
+            { id: 103, nombre: "barra de chocolate con leche", porcion: "1 unidad chica (aprox. 15 gr)", creditos: 2.25, calidad: "Rojo" },
+            { id: 104, nombre: "barra de chocolate sin azúcar", porcion: "1 unidad (aprox. 23 gr)", creditos: 3.5, calidad: "Rojo" },
+            { id: 105, nombre: "barra de chocolate suizo c/ miel y almendras", porcion: "1 unidad", creditos: 6, calidad: "Rojo" },
+            { id: 106, nombre: "barra de granola", porcion: "1 unidad (aprox. 32 gr)", creditos: 4.25, calidad: "Amarillo" },
+            { id: 107, nombre: "barra de pasta de maní (mantecol)", porcion: "1 unidad de 25 gr", creditos: 4, calidad: "Rojo" },
+            { id: 108, nombre: "barra stick de chocolate c/ leche", porcion: "1 unidad de 15 gr", creditos: 2.25, calidad: "Rojo" },
+            { id: 109, nombre: "barrita de cereal c/ manzana light (farmacity)", porcion: "1 unidad", creditos: 1.5, calidad: "Amarillo" },
+            { id: 110, nombre: "barrita de cereal c/ manzana y miel", porcion: "1 unidad (aprox. 23 gr)", creditos: 2.75, calidad: "Amarillo" },
+            { id: 111, nombre: "barrita de cereal común", porcion: "1 unidad", creditos: 3, calidad: "Amarillo" },
+            { id: 112, nombre: "barrita de cereal con chocolate", porcion: "1 unidad (aprox 22 grs)", creditos: 2.75, calidad: "Amarillo" },
+            { id: 113, nombre: "barrita de cereal con coco", porcion: "1 unidad (aprox. 23 gr)", creditos: 3.25, calidad: "Amarillo" },
+            { id: 114, nombre: "barrita de cereal con frutas", porcion: "1 unidad (aprox. 25 gr)", creditos: 2.5, calidad: "Amarillo" },
+            { id: 115, nombre: "barrita de cereal con leche", porcion: "1 unidad (aprox. 22 gr)", creditos: 2.25, calidad: "Amarillo" },
+            { id: 116, nombre: "barrita de cereal con yogurt", porcion: "1 unidad", creditos: 3.5, calidad: "Rojo" },
+            { id: 117, nombre: "barrita de cereal light", porcion: "1 unidad de aprox. 23 gr", creditos: 1.5, calidad: "Amarillo" },
+            { id: 118, nombre: "barrita de cereal light con ciruelas", porcion: "1 unidad (aprox 25 grs)", creditos: 1.75, calidad: "Amarillo" },
+            { id: 119, nombre: "barrita de cereal light sabor yogurt de ananá y almendras", porcion: "1 unidad de aprox. 20 gr", creditos: 1.75, calidad: "Amarillo" },
+            { id: 120, nombre: "barrita de cereal max Cormillot", porcion: "1 unidad", creditos: 1.5, calidad: "Amarillo" },
+            { id: 121, nombre: "barrita de cereal mix light", porcion: "1 unidad (aprox 20 grs)", creditos: 2, calidad: "Amarillo" },
+            { id: 122, nombre: "barrita de cereal tradicional", porcion: "1 unidad (aprox 23 grs) (98 Cal.)", creditos: 2.75, calidad: "Amarillo" },
+            { id: 123, nombre: "barrita de chocolate c/ cereal s/ azúcar", porcion: "1 unidad de 23 gr", creditos: 3.5, calidad: "Rojo" },
+            { id: 124, nombre: "barrita proteica", porcion: "1 unidad (aprox. 50 gr)", creditos: 3.75, calidad: "Amarillo" },
+            { id: 125, nombre: "Bastoncitos", porcion: "1 unidad", creditos: 0.25, calidad: "Verde" },
+            { id: 126, nombre: "bastoncitos de surimi", porcion: "1 unidad (aprox. 25 gr)", creditos: 0.25, calidad: "Verde" },
+            { id: 127, nombre: "batata", porcion: "1 unidad chica (aprox 100 gr)", creditos: 3, calidad: "Verde" },
+            { id: 128, nombre: "batido proteico reforzado", porcion: "1 unidad", creditos: 4.5, calidad: "Amarillo" },
+            { id: 129, nombre: "batido proteico simple", porcion: "1 unidad", creditos: 2.75, calidad: "Verde" },
+            { id: 130, nombre: "bay biscuit", porcion: "1 unidad", creditos: 2, calidad: "Amarillo" },
+            { id: 131, nombre: "bebida a base de hierbas", porcion: "1 vaso (aprox 250 gr)", creditos: 2, calidad: "Verde" },
+            { id: 132, nombre: "bebida a base de hierbas light", porcion: "1 vaso (aprox 250 gr)", creditos: 0, calidad: "Verde" },
+            { id: 133, nombre: "bebida a base de jugo de manzana y leche descremada deslactosada", porcion: "1 vaso (200 cm3 o 200 ml)", creditos: 0.5, calidad: "Verde" },
+            { id: 134, nombre: "bebida de soja saborizada", porcion: "1 vaso (aprox 250 gr)", creditos: 2.5, calidad: "Verde" },
+            { id: 135, nombre: "Bebidas Blancas destiladas", porcion: "1 medida", creditos: 2.5, calidad: "Amarillo" },
+            { id: 136, nombre: "Bebidas de soja sabor natural", porcion: "1  vaso", creditos: 2, calidad: "Verde" },
+            { id: 137, nombre: "bebidas deportivas", porcion: "1 vaso (aprox. 250 cm3 o ml)", creditos: 1.25, calidad: "Verde" },
+            { id: 138, nombre: "bebidas destiladas promedio", porcion: "1 medida (aprox. 50 cm3)", creditos: 2.5, calidad: "Amarillo" },
+            { id: 139, nombre: "bebidas energizante", porcion: "1 vaso (aprox. 250 cm3 o ml)", creditos: 3.25, calidad: "Verde" },
+            { id: 140, nombre: "berenjena", porcion: "1 unidad chica (aprox. 200 gr)", creditos: 0, calidad: "Verde" },
+            { id: 141, nombre: "bergamota", porcion: "1 unidad (aprox. 100 gr)", creditos: 1, calidad: "Verde" },
+            { id: 142, nombre: "berro", porcion: "1 plato tamaño postre (aprox. 50 gr)", creditos: 0, calidad: "Verde" },
+            { id: 143, nombre: "besugo", porcion: "1 filet grande (aprox. 150 gr)", creditos: 2.25, calidad: "Verde" },
+            { id: 144, nombre: "bife (ojo de bife)", porcion: "1 rodaja gruesa (aprox. 140 gr)", creditos: 4, calidad: "Verde" },
+            { id: 145, nombre: "bife ancho", porcion: "1 churrasco chico (aprox. 150 gr)", creditos: 14, calidad: "Amarillo" },
+            { id: 146, nombre: "bife angosto", porcion: "1 churrasco chico (aprox. 150 gr)", creditos: 10.25, calidad: "Amarillo" },
+            { id: 147, nombre: "bife de hígado", porcion: "1 bife chico (aprox. 100 gr)", creditos: 2.75, calidad: "Verde" },
+            { id: 148, nombre: "bife de lomo magro", porcion: "1 churrasco chico (aprox. 150 gr)", creditos: 3.25, calidad: "Verde" },
+            { id: 149, nombre: "Bife magro de lomo o cuadril", porcion: "1 churrasco chico", creditos: 3, calidad: "Verde" },
+            { id: 150, nombre: "bizcochos de arroz (Gallo Snacks)", porcion: "1 porcion (18 unidades)", creditos: 2, calidad: "Amarillo" },
+            { id: 151, nombre: "bizcochos de grasa", porcion: "1 unidad (aprox. 5 grs.)", creditos: 1, calidad: "Rojo" },
+            { id: 152, nombre: "bizcochos de grasa light", porcion: "1 unidad (aprox. 5 grs.)", creditos: 0.75, calidad: "Rojo" },
+            { id: 153, nombre: "bizcochos de salvado", porcion: "1 unidad (aprox 3,7 grs.)", creditos: 0.5, calidad: "Amarillo" },
+            { id: 154, nombre: "bizcochuelo", porcion: "1 porción medina (aprox.60 gr)", creditos: 4.75, calidad: "Amarillo" },
+            { id: 155, nombre: "bizcochuelo bañado en chocolate", porcion: "1 paquete chico", creditos: 3.5, calidad: "Amarillo" },
+            { id: 156, nombre: "bloquecito de dulce de leche light (Vauquita)", porcion: "1 unidad de 25 gr", creditos: 3.5, calidad: "Amarillo" },
+            { id: 157, nombre: "Bocadito Cormillot", porcion: "1 unidad", creditos: 1.5, calidad: "Amarillo" },
+            { id: 158, nombre: "bocadito de higo con 1 mariposa de nuez", porcion: "1 unidad de 25 gr (74 Kcal)", creditos: 1.5, calidad: "Amarillo" },
+            { id: 159, nombre: "bocadito de oblea con dulce de leche cubierta con chocolate", porcion: "1 unidad", creditos: 2, calidad: "Amarillo" },
+            { id: 160, nombre: "bocadito helado bañado con chocolate", porcion: "1 unidad (aprox. 10 gr)", creditos: 1.25, calidad: "Amarillo" },
+            { id: 161, nombre: "bocaditos light de harina de papa", porcion: "1 paquete chico (aprox. 21 gr)", creditos: 3, calidad: "Amarillo" },
+            { id: 162, nombre: "bombón de chocolate relleno pasta de maní y almendras (bon o bon)", porcion: "1 unidad", creditos: 2.25, calidad: "Amarillo" },
+            { id: 163, nombre: "Bombon de dulce de leche", porcion: "1 unidad", creditos: 2, calidad: "Amarillo" },
+            { id: 164, nombre: "bombón de dulce de leche", porcion: "1 unidad (aprox. 20 gr)", creditos: 1.75, calidad: "Amarillo" },
+            { id: 165, nombre: "bombón helado (palito)", porcion: "1 unidad (aprox. 70 gr)", creditos: 7.25, calidad: "Amarillo" },
+            { id: 166, nombre: "bombón relleno", porcion: "1 unidad (aprox. 20 gr)", creditos: 3, calidad: "Rojo" },
+            { id: 167, nombre: "bombón suizo", porcion: "1 unidad (aprox. 100 grs.)", creditos: 8, calidad: "Amarillo" },
+            { id: 168, nombre: "bombón tipo marroc", porcion: "1 unidad (aprox. 15 gr)", creditos: 2.25, calidad: "Rojo" },
+            { id: 169, nombre: "brochettes de vegetales asados con trozos de pechuga de pollo", porcion: "2 unidades", creditos: 1.5, calidad: "Verde" },
+            { id: 170, nombre: "brócoli", porcion: "1 plato tamaño postre (aprox. 50 grs.)", creditos: 0, calidad: "Verde" },
+            { id: 171, nombre: "brócoli congelado", porcion: "1 plato postre", creditos: 0, calidad: "Verde" },
+            { id: 172, nombre: "brotes de soja", porcion: "1 plato de postre (aprx.50 gr)", creditos: 0, calidad: "Verde" },
+            { id: 173, nombre: "Brotola", porcion: "1 filet grande", creditos: 1.5, calidad: "Verde" },
+            { id: 174, nombre: "brótola", porcion: "1 filet grande", creditos: 1.5, calidad: "Verde" },
+            { id: 175, nombre: "budín de pan", porcion: "1 porción chica", creditos: 6, calidad: "Amarillo" },
+            { id: 176, nombre: "budín inglés light", porcion: "1 rodaja fina (aprox. 30 gr)", creditos: 1.5, calidad: "Amarillo" },
+            { id: 177, nombre: "budín sabor naranja", porcion: "1 rodaja", creditos: 2.5, calidad: "Amarillo" },
+            { id: 178, nombre: "budín saborizado sin frutas", porcion: "1 rodaja de 1 cm de grosor (+o- 30 gr)", creditos: 3.5, calidad: "Amarillo" },
+            { id: 179, nombre: "caballa", porcion: "1 filet grande (aprox. 150 gr)", creditos: 2.25, calidad: "Verde" },
+            { id: 180, nombre: "caballa al natural", porcion: "1 lata chica (aprox. 120 gr)", creditos: 3.25, calidad: "Verde" },
+            { id: 181, nombre: "caballa en aceite", porcion: "1 lata chica (aprox. 120 gr)", creditos: 5.5, calidad: "Amarillo" },
+            { id: 182, nombre: "caballa en salsa de tomate", porcion: "1 lata chica (aprox. 120 gr)", creditos: 10, calidad: "Amarillo" },
+            { id: 183, nombre: "cacao amargo", porcion: "1 cucharada de postre (aprox. 10 gr)", creditos: 0.75, calidad: "Amarillo" },
+            { id: 184, nombre: "cacao común", porcion: "1 cucharada de postre (aprox. 10 gr)", creditos: 1, calidad: "Amarillo" },
+            { id: 185, nombre: "cacao reducido en caloría y valor", porcion: "1 cda. tamaño postre (aprox. 10 gr)", creditos: 0.75, calidad: "Amarillo" },
+            { id: 186, nombre: "Calabaza", porcion: "1 taza de te en cocido", creditos: 1, calidad: "Verde" },
+            { id: 187, nombre: "calabaza", porcion: "1 taza de té en cocido (aprox. 150 gr)", creditos: 1, calidad: "Verde" },
+            { id: 188, nombre: "calamares", porcion: "1 taza tamaño té (aprox. 150 gr)", creditos: 1.5, calidad: "Verde" },
+            { id: 189, nombre: "caldo común", porcion: "1 vaso (aprox. 200 gr)", creditos: 0.5, calidad: "Verde" },
+            { id: 190, nombre: "camarones", porcion: "1 taza tamaño té (aprox. 150 gr)", creditos: 1.5, calidad: "Verde" },
+            { id: 191, nombre: "canelón de choclo", porcion: "1 unidad (aprox. 150 gr)", creditos: 2.75, calidad: "Verde" },
+            { id: 192, nombre: "cangrejo de mar", porcion: "1 taza tamaño té (aprox. 150 gr)", creditos: 1.5, calidad: "Verde" },
+            { id: 193, nombre: "capuchino light", porcion: "1 taza tamaño te (aprox. 165 gr)", creditos: 0.75, calidad: "Verde" },
+            { id: 194, nombre: "capuchino vainilla (en sobres)", porcion: "1 sobre de 12,5 gr", creditos: 1.5, calidad: "Amarillo" },
+            { id: 195, nombre: "Caramelo Acido", porcion: "1 unidad", creditos: 0.5, calidad: "Amarillo" },
+            { id: 196, nombre: "caramelo ácido", porcion: "1 unidad (aprox 5 gr)", creditos: 0.5, calidad: "Amarillo" },
+            { id: 197, nombre: "caramelo blando c/ leche light", porcion: "1 unidad (aprox 8 gr)", creditos: 0.75, calidad: "Amarillo" },
+            { id: 198, nombre: "caramelo duros light o pastillas light", porcion: "1 unidad", creditos: 0, calidad: "Verde" },
+            { id: 199, nombre: "Caramelo light", porcion: "1 unidad", creditos: 0, calidad: "Amarillo" },
+            { id: 200, nombre: "caramelo masticable", porcion: "1 unidad (aprox. 5 gr)", creditos: 0.5, calidad: "Amarillo" },
+            { id: 201, nombre: "Caramelo relleno de dulce de leche", porcion: "1 unidad", creditos: 1, calidad: "Amarillo" },
+            { id: 202, nombre: "caramelos de goma", porcion: "1 sobre chico", creditos: 1.75, calidad: "Amarillo" },
+            { id: 203, nombre: "caramelos rellenos c/ dulce de leche", porcion: "1 unidad (aprox. 7 gr)", creditos: 1, calidad: "Amarillo" },
+            { id: 204, nombre: "carne a la vinagreta", porcion: "1 rodaja gruesa (180 grs.)", creditos: 7.5, calidad: "Amarillo" },
+            { id: 205, nombre: "carne picada común", porcion: "1 tza tipo té, en crudo (aprox. 150 g)", creditos: 10.75, calidad: "Amarillo" },
+            { id: 206, nombre: "carne picada especial", porcion: "1 tza tipo té, en crudo (aprox. 150 g)", creditos: 6.5, calidad: "Amarillo" },
+            { id: 207, nombre: "carne, bola de lomo", porcion: "1 churrasco (aprox. 150 gr)", creditos: 4.5, calidad: "Verde" },
+            { id: 208, nombre: "carne, cuadrada", porcion: "1 churrasco (aprox. 150 gr)", creditos: 3.75, calidad: "Verde" },
+            { id: 209, nombre: "carne, entraña", porcion: "1 rodaja gruesa (aprox. 150 grs.)", creditos: 6.5, calidad: "Amarillo" },
+            { id: 210, nombre: "carne, falda o matambre", porcion: "1 rodaja gruesa (aprox. 150 gr)", creditos: 11, calidad: "Amarillo" },
+            { id: 211, nombre: "carne, lomo", porcion: "1 bife chico (150 gr)", creditos: 3, calidad: "Verde" },
+            { id: 212, nombre: "carne, ojo de bife", porcion: "1 rodaja gruesa (aprox. 150 gr)", creditos: 4, calidad: "Verde" },
+            { id: 213, nombre: "carne, peceto", porcion: "1 rodaja fina (aprox. 50 gr)", creditos: 0.75, calidad: "Verde" },
+            { id: 214, nombre: "carne, vacío", porcion: "1 rodaja gruesa", creditos: 7.5, calidad: "Amarillo" },
+            { id: 215, nombre: "castañas de cajú", porcion: "1 cda. sopera ó 12 u. (aprox. 10 gr)", creditos: 1.5, calidad: "Rojo" },
+            { id: 216, nombre: "cebada pelada", porcion: "1 cucharada sopera (aprox. 10 gr)", creditos: 0.75, calidad: "Amarillo" },
+            { id: 217, nombre: "cebolla", porcion: "1 unidad chica", creditos: 0, calidad: "Verde" },
+            { id: 218, nombre: "cerdo chuletas", porcion: "1 porción de 100 gr", creditos: 5, calidad: "Amarillo" },
+            { id: 219, nombre: "cerdo costillas", porcion: "1 porción de 100 gr", creditos: 5.5, calidad: "Amarillo" },
+            { id: 220, nombre: "cerdo, lomo", porcion: "1 rodaja (aprox. 150 gr)", creditos: 2.25, calidad: "Verde" },
+            { id: 221, nombre: "cerdo, pechito", porcion: "1 trozo (aprox. 125 gr)", creditos: 10.25, calidad: "Amarillo" },
+            { id: 222, nombre: "Cereal muesli", porcion: "1 taza de te", creditos: 3, calidad: "Amarillo" },
+            { id: 223, nombre: "cereales muesli", porcion: "1 sombrerito de yogurt", creditos: 3, calidad: "Rojo" },
+            { id: 224, nombre: "cereza", porcion: "1 taza tamaño té (aprox. 100 grs.)", creditos: 1.25, calidad: "Verde" },
+            { id: 225, nombre: "cerveza fuerte", porcion: "1 lata (aprox. 350 cm3)", creditos: 3.75, calidad: "Verde" },
+            { id: 226, nombre: "cerveza light", porcion: "1 lata", creditos: 2, calidad: "Verde" },
+            { id: 227, nombre: "cerveza negra", porcion: "1 lata", creditos: 4.25, calidad: "Verde" },
+            { id: 228, nombre: "cerveza rubia", porcion: "1 lata (aprox. 350 cm3)", creditos: 3.25, calidad: "Verde" },
+            { id: 229, nombre: "cerveza sin alcohol", porcion: "1 lata (aprox. 350 cm3)", creditos: 1.5, calidad: "Verde" },
+            { id: 230, nombre: "Champagne extra brut", porcion: "1 copa", creditos: 2.5, calidad: "Verde" },
+            { id: 231, nombre: "champaña demi sec", porcion: "1 copa (aprox. 150 cm3)", creditos: 2.5, calidad: "Verde" },
+            { id: 232, nombre: "champaña dulce", porcion: "1 copa (aprox. 150 cm3)", creditos: 3.75, calidad: "Verde" },
+            { id: 233, nombre: "champaña extra brut", porcion: "1 copa (aprox. 150 cm3)", creditos: 2.5, calidad: "Verde" },
+            { id: 234, nombre: "chauchas", porcion: "1 taza tam. té en cocido (aprox.150 gr)", creditos: 1, calidad: "Verde" },
+            { id: 235, nombre: "chauchas enlatadas", porcion: "1 plato postre (aprox. 200 gr)", creditos: 1, calidad: "Verde" },
+            { id: 236, nombre: "chicle", porcion: "1 unidad", creditos: 0.5, calidad: "Rojo" },
+            { id: 237, nombre: "Chicle light", porcion: "1 unidad", creditos: 0, calidad: "Amarillo" },
+            { id: 238, nombre: "chicles light", porcion: "1 unidad", creditos: 0, calidad: "Verde" },
+            { id: 239, nombre: "chinchulín", porcion: "1 rulito (aprox. 50 gr)", creditos: 1.75, calidad: "Amarillo" },
+            { id: 240, nombre: "chizitos / maicitos", porcion: "1 taza tamaño té (aprox. 20 gr)", creditos: 3.5, calidad: "Rojo" },
+            { id: 241, nombre: "choclo", porcion: "1 unidad chica (aprox. 125 gr)", creditos: 2.5, calidad: "Verde" },
+            { id: 242, nombre: "choclo congelado", porcion: "1 plato postre", creditos: 3, calidad: "Verde" },
+            { id: 243, nombre: "choclo enlatado", porcion: "1 plato postre (aprox. 150 gr)", creditos: 2.5, calidad: "Verde" },
+            { id: 244, nombre: "chocolate", porcion: "1 barrita (14 grs.)", creditos: 3, calidad: "Rojo" },
+            { id: 245, nombre: "Chocolate  0% Azucar Cormillot", porcion: "1 unidad", creditos: 1, calidad: "Rojo" },
+            { id: 246, nombre: "chocolate c/ leche 0% azúcar Cormillot", porcion: "1 unidad", creditos: 1, calidad: "Rojo" },
+            { id: 247, nombre: "chocolate común", porcion: "1 unidad de 100 gr", creditos: 16.5, calidad: "Rojo" },
+            { id: 248, nombre: "Chocolate con Cereal Sin azucar", porcion: "1 unidad", creditos: 3.5, calidad: "Amarillo" },
+            { id: 249, nombre: "chocolate con cereal sin azúcar", porcion: "1 unidad", creditos: 3.5, calidad: "Rojo" },
+            { id: 250, nombre: "chocolate con leche", porcion: "1 unidad chica (aprox. 25 gr)", creditos: 4, calidad: "Rojo" },
+            { id: 251, nombre: "Chocolate con leche 0% Azucar Cormillot", porcion: "1 unidad", creditos: 1, calidad: "Amarillo" },
+            { id: 252, nombre: "chocolate con leche relleno c/yogur, cereza y arroz inflado", porcion: "1 unidad (aprox. 20 gr)", creditos: 3, calidad: "Rojo" },
+            { id: 253, nombre: "chocolate de tetrapack listo para beber (Cindor)", porcion: "1 vaso", creditos: 2.5, calidad: "Verde" },
+            { id: 254, nombre: "chocolate dietético bajo en azúcar", porcion: "1 unidad de 100 gr", creditos: 16.5, calidad: "Rojo" },
+            { id: 255, nombre: "chocolate dietético promedio", porcion: "1 unida (aprox. 20 gr)", creditos: 3, calidad: "Rojo" },
+            { id: 256, nombre: "chocolate light", porcion: "1 unida (aprox. 20 gr)", creditos: 3, calidad: "Rojo" },
+            { id: 257, nombre: "chocolate light casero (leche descrem. + 1cda. postre cacao amargo y edulc.)", porcion: "1 vaso", creditos: 1, calidad: "Verde" },
+            { id: 258, nombre: "chocolate negro amargo", porcion: "1 tableta", creditos: 6, calidad: "Rojo" },
+            { id: 259, nombre: "chocolate sin azúcar (georgalos)", porcion: "1 porción de 25 gr", creditos: 3, calidad: "Rojo" },
+            { id: 260, nombre: "chop suey", porcion: "1 cazuela (aprox. 250 gr)", creditos: 3, calidad: "Verde" },
+            { id: 261, nombre: "chorizo", porcion: "1 unidad (aprox. 100 gr)", creditos: 11.75, calidad: "Amarillo" },
+            { id: 262, nombre: "chorizo colorado", porcion: "1 unidad (aprox. 100 gr)", creditos: 12.25, calidad: "Amarillo" },
+            { id: 263, nombre: "chorizo de pollo", porcion: "1 unidad", creditos: 9, calidad: "Amarillo" },
+            { id: 264, nombre: "chorizo light", porcion: "1 unidad (aprox. 100 gr)", creditos: 3, calidad: "Verde" },
+            { id: 265, nombre: "chow mien de pollo", porcion: "1 cazuela (aprox. 250 gr)", creditos: 5.5, calidad: "Verde" },
+            { id: 266, nombre: "chuleta de cordero", porcion: "1 unidad (aprox. 100 gr)", creditos: 5, calidad: "Amarillo" },
+            { id: 267, nombre: "cindor light", porcion: "1 unidad de 200 cm3", creditos: 2, calidad: "Verde" },
+            { id: 268, nombre: "ciruela", porcion: "1 unidad (aprox. 50 gr.)", creditos: 0.5, calidad: "Verde" },
+            { id: 269, nombre: "ciruela deshidratada", porcion: "1 orejón (aprox. 10 gr)", creditos: 0.75, calidad: "Amarillo" },
+            { id: 270, nombre: "cítricas, frutas", porcion: "1 unidad chica", creditos: 1, calidad: "Verde" },
+            { id: 271, nombre: "Clara de huevo", porcion: "1 unidad", creditos: 0.5, calidad: "Verde" },
+            { id: 272, nombre: "clara de huevo", porcion: "1 unidad (aprox 35 g)", creditos: 0.25, calidad: "Verde" },
+            { id: 273, nombre: "cocktail de camarones", porcion: "1 copa", creditos: 1.5, calidad: "Verde" },
+            { id: 274, nombre: "cocktails bebida, promedio", porcion: "1 vaso largo (aprox. 150 cm3)", creditos: 3, calidad: "Verde" },
+            { id: 275, nombre: "Cocktails promedio", porcion: "1 vaso largo", creditos: 3, calidad: "Verde" },
+            { id: 276, nombre: "cóctel light (frutas enlatada)", porcion: "1 compotera chica (aprox. 150 gr)", creditos: 1, calidad: "Verde" },
+            { id: 277, nombre: "cogñac (bebida destilada)", porcion: "1 medida (aprox. 50 cm3)", creditos: 3, calidad: "Amarillo" },
+            { id: 278, nombre: "coliflor", porcion: "1 taza de té en cocido (aprox. 100 gr)", creditos: 0, calidad: "Verde" },
+            { id: 279, nombre: "compota de frutas c/ edulcorante (hecha c/ ciruela, durazno, damasco, pera o", porcion: "5 unidades de frutas", creditos: 3.75, calidad: "Verde" },
+            { id: 280, nombre: "compota de manzana c/ edulcorante", porcion: "1 taza (aprox. 150 gr)", creditos: 1.5, calidad: "Verde" },
+            { id: 281, nombre: "conejo", porcion: "1 porción de aprox 150 gr", creditos: 3, calidad: "Verde" },
+            { id: 282, nombre: "conejo de pascua", porcion: "1 unidad chica (aprox. 20 gr)", creditos: 3.5, calidad: "Rojo" },
+            { id: 283, nombre: "confites de chocolate", porcion: "1 paquete chico (aprox. 33 gr)", creditos: 5, calidad: "Rojo" },
+            { id: 284, nombre: "confites de maní con chocolate", porcion: "1 paquete chico (aprox. 20 gr)", creditos: 3, calidad: "Rojo" },
+            { id: 285, nombre: "cono de vainilla", porcion: "1 unidad (aprox. 95 gr)", creditos: 8.5, calidad: "Amarillo" },
+            { id: 286, nombre: "copos de avena", porcion: "1 taza de té (aprox. 30 gr)", creditos: 3.5, calidad: "Amarillo" },
+            { id: 287, nombre: "copos de cereal de avena s/ azúcar", porcion: "1 taza de té", creditos: 2, calidad: "Amarillo" },
+            { id: 288, nombre: "Copos de maiz", porcion: "1 taza de té", creditos: 3.5, calidad: "Amarillo" },
+            { id: 289, nombre: "copos de maíz", porcion: "1 taza de té (aprox. 30 gr)", creditos: 3.75, calidad: "Amarillo" },
+            { id: 290, nombre: "copos de salvado de trigo c/ chocolates y fresas (italianos)", porcion: "1 taza de té (aprox. 30 gr)", creditos: 3, calidad: "Amarillo" },
+            { id: 291, nombre: "cordero", porcion: "1 rodaja gruesa", creditos: 4.5, calidad: "Verde" },
+            { id: 292, nombre: "corvina", porcion: "1 filete grande (aprox. 150 gr)", creditos: 2, calidad: "Verde" },
+            { id: 293, nombre: "cous cous", porcion: "1 cucharada sopera (aprox. 10 gr)", creditos: 1, calidad: "Amarillo" },
+            { id: 294, nombre: "crema de leche", porcion: "1 cucharada postre (aprox. 10 g)", creditos: 2, calidad: "Rojo" },
+            { id: 295, nombre: "crema de leche al 40 %", porcion: "1 cucharada de postre (aprox. 10 gr)", creditos: 1.75, calidad: "Rojo" },
+            { id: 296, nombre: "crema de leche light", porcion: "1 cucharada de postre", creditos: 1, calidad: "Amarillo" },
+            { id: 297, nombre: "crema light 0%", porcion: "1 cda sopera (aprox. 15 gr)", creditos: 0, calidad: "Verde" },
+            { id: 298, nombre: "crema no láctea light, para café", porcion: "1 cda. tamaño té (aprox. 2 gr)", creditos: 0.25, calidad: "Amarillo" },
+            { id: 299, nombre: "crema no láctea para café", porcion: "1 cda. tamaño té (aprox. 2 gr)", creditos: 0.5, calidad: "Rojo" },
+            { id: 300, nombre: "cuadraditos de avena", porcion: "1 taza de té (aprox. 30 gr)", creditos: 3, calidad: "Amarillo" },
+            { id: 301, nombre: "cuadraditos de dulce de leche light", porcion: "1 unidad (aprox. 18 gr)", creditos: 1.25, calidad: "Amarillo" },
+            { id: 302, nombre: "Cuadril", porcion: "1 rodaja gruesa", creditos: 4.5, calidad: "Verde" },
+            { id: 303, nombre: "cuadril magro", porcion: "1 rodaja gruesa (aprox.150 grs.)", creditos: 4.75, calidad: "Amarillo" },
+            { id: 304, nombre: "Cubanito Cormillot", porcion: "1 unidad", creditos: 0.5, calidad: "Amarillo" },
+            { id: 305, nombre: "cubanito helado", porcion: "1 unidad (aprox. 40 gr)", creditos: 3, calidad: "Amarillo" },
+            { id: 306, nombre: "cubanito light Cormillot", porcion: "1 unidad (aprox. 5 grs.)", creditos: 0.5, calidad: "Amarillo" },
+            { id: 307, nombre: "cuscús", porcion: "1 plato tam. postre (aprox. 33 gr)", creditos: 3, calidad: "Amarillo" },
+            { id: 308, nombre: "daiquiri", porcion: "1 vaso largo (aprox. 150 cm3)", creditos: 6.75, calidad: "Amarillo" },
+            { id: 309, nombre: "damasco", porcion: "1 unidad (aprox. 25 gr)", creditos: 0.25, calidad: "Verde" },
+            { id: 310, nombre: "damasco deshidratado", porcion: "1 orejón (aprox. 10 gr)", creditos: 0.75, calidad: "Amarillo" },
+            { id: 311, nombre: "dorado", porcion: "1 filete grande (aprox. 150 gr)", creditos: 2, calidad: "Verde" },
+            { id: 312, nombre: "dulce de batata", porcion: "1 cassette de música (50 gr)", creditos: 3.5, calidad: "Amarillo" },
+            { id: 313, nombre: "dulce de batata light", porcion: "1 cassette de música (aprox.50 grs.)", creditos: 1.75, calidad: "Amarillo" },
+            { id: 314, nombre: "Dulce de Leche", porcion: "1 Cda postre", creditos: 1, calidad: "Amarillo" },
+            { id: 315, nombre: "dulce de leche (light)", porcion: "1 cda. tamaño postre (aprox. 10 gr)", creditos: 0.5, calidad: "Amarillo" },
+            { id: 316, nombre: "dulce de leche común", porcion: "1 cda. tam. postre (aprox. 10 gr)", creditos: 0.75, calidad: "Amarillo" },
+            { id: 317, nombre: "Dulce de leche light", porcion: "1 Cda postre", creditos: 0.5, calidad: "Amarillo" },
+            { id: 318, nombre: "dulce de membrillo", porcion: "1 cassette de música (aprox.50 grs.)", creditos: 4, calidad: "Amarillo" },
+            { id: 319, nombre: "dulce de membrillo light", porcion: "1 cassette de música (aprox.50 grs.)", creditos: 2, calidad: "Amarillo" },
+            { id: 320, nombre: "durazno (fruta fresca)", porcion: "1 unidad (aprox. 100 gr)", creditos: 1, calidad: "Verde" },
+            { id: 321, nombre: "durazno en almíbar light", porcion: "2 mitades (aprox. 100)", creditos: 0.5, calidad: "Verde" },
+            { id: 322, nombre: "durazno fruta deshidratada", porcion: "1 orejon (aprox. 10 gr)", creditos: 0.75, calidad: "Verde" },
+            { id: 323, nombre: "echalote", porcion: "1 plato postre", creditos: 0, calidad: "Verde" },
+            { id: 324, nombre: "empanada de carne al horno", porcion: "1 unidad (aprox 120 gr)", creditos: 6, calidad: "Amarillo" },
+            { id: 325, nombre: "empanada de carne frita", porcion: "1 unidad", creditos: 6.25, calidad: "Amarillo" },
+            { id: 326, nombre: "empanada de jamón y queso al horno", porcion: "1 unidad", creditos: 4.5, calidad: "Amarillo" },
+            { id: 327, nombre: "empanada de jamón y queso frita", porcion: "1 unidad", creditos: 6, calidad: "Amarillo" },
+            { id: 328, nombre: "empanada de pollo al horno", porcion: "1 unidad (aprox 120 gr)", creditos: 5, calidad: "Amarillo" },
+            { id: 329, nombre: "empanada de pollo frita", porcion: "1 unidad", creditos: 5.5, calidad: "Amarillo" },
+            { id: 330, nombre: "empanada de verdura al horno", porcion: "1 unidad", creditos: 1.75, calidad: "Verde" },
+            { id: 331, nombre: "empanada gallega completa", porcion: "1 unidad completa", creditos: 7.5, calidad: "Amarillo" },
+            { id: 332, nombre: "ensalada César (Mc Donald)", porcion: "1 porción", creditos: 3.5, calidad: "Verde" },
+            { id: 333, nombre: "ensalada César c/ crispy (Mc Donald)", porcion: "1 porción (aprox. 300 gr)", creditos: 8, calidad: "Verde" },
+            { id: 334, nombre: "ensalada César con pollo (Mc Donald)", porcion: "1 porción", creditos: 5, calidad: "Verde" },
+            { id: 335, nombre: "ensalada de frutas", porcion: "1 taza con líquido (aprox. 280 gr)", creditos: 1.5, calidad: "Verde" },
+            { id: 336, nombre: "ensalada de frutas (c/ edulcorante)", porcion: "1 vaso (aprox. 200 gr)", creditos: 1.75, calidad: "Verde" },
+            { id: 337, nombre: "ensalada de frutas Cormillot light", porcion: "1 pote", creditos: 1.5, calidad: "Verde" },
+            { id: 338, nombre: "ensalada de frutas enlatada s/ azúcar", porcion: "1 compotera chica (aprox. 150 gr)", creditos: 1.25, calidad: "Verde" },
+            { id: 339, nombre: "ensalada de frutas sin azúcar", porcion: "1 compotera (150 gr)", creditos: 1.25, calidad: "Verde" },
+            { id: 340, nombre: "ensalada de la huerta (Mc Donald)", porcion: "1 porción (aprox. 200 gr)", creditos: 2, calidad: "Verde" },
+            { id: 341, nombre: "ensalada Gourmet (Mc Donald)", porcion: "1 porción (250 gr)", creditos: 4, calidad: "Verde" },
+            { id: 342, nombre: "ensalada jardinera", porcion: "1 porción de 100 gr", creditos: 1, calidad: "Verde" },
+            { id: 343, nombre: "ensalada jardinera congelada", porcion: "1 plato postre (aprox. 150 gr)", creditos: 2.5, calidad: "Verde" },
+            { id: 344, nombre: "ensalada jardinera enlatada", porcion: "1 plato tamaño postre (aprox. 150 gr)", creditos: 1.75, calidad: "Verde" },
+            { id: 345, nombre: "ensalada primavera congelada", porcion: "1 plato postre (aprox. 150 gr)", creditos: 2, calidad: "Verde" },
+            { id: 346, nombre: "ensalada rusa", porcion: "1 plato postre", creditos: 6.5, calidad: "Amarillo" },
+            { id: 347, nombre: "ensalada Waldorf común", porcion: "1 porción (aprox 175 gr)", creditos: 8.75, calidad: "Amarillo" },
+            { id: 348, nombre: "ensalada Waldorf light", porcion: "1 porción (aprox 180 gr)", creditos: 5.75, calidad: "Amarillo" },
+            { id: 349, nombre: "escarola", porcion: "1 plato tamaño postre (aprox. 50 gr)", creditos: 0, calidad: "Verde" },
+            { id: 350, nombre: "espárrago", porcion: "1 unidad", creditos: 0, calidad: "Verde" },
+            { id: 351, nombre: "espinaca", porcion: "1 taza grande en cocido", creditos: 0, calidad: "Verde" },
+            { id: 352, nombre: "extracto de carne", porcion: "1 cucharada de postre (aprox. 10 gr)", creditos: 0.5, calidad: "Amarillo" },
+            { id: 353, nombre: "factura con crema pastelera", porcion: "1 unidad (aprox. 50 gr)", creditos: 5.25, calidad: "Amarillo" },
+            { id: 354, nombre: "factura con dulce de leche", porcion: "1 unidad (aprox 50 gr)", creditos: 6.5, calidad: "Amarillo" },
+            { id: 355, nombre: "Facturas con dulce de leche", porcion: "1 unidad", creditos: 6.5, calidad: "Amarillo" },
+            { id: 356, nombre: "facturas con dulce de membrillo", porcion: "1 unidad (aprox. 50 gr)", creditos: 5, calidad: "Amarillo" },
+            { id: 357, nombre: "fainá", porcion: "1 porción", creditos: 6, calidad: "Amarillo" },
+            { id: 358, nombre: "fécula de maíz", porcion: "1 cucharada sopera (aprox. 10 gr)", creditos: 0.75, calidad: "Amarillo" },
+            { id: 359, nombre: "fideos", porcion: "1 plato tamaño postre (aprox 33 gr)", creditos: 3.75, calidad: "Amarillo" },
+            { id: 360, nombre: "fideos de sémola con gluten", porcion: "1 plato postre (aprox 33 gr)", creditos: 2.5, calidad: "Amarillo" },
+            { id: 361, nombre: "fideos dietéticos", porcion: "1 plato tamaño postre (aprox 33 gr)", creditos: 2.5, calidad: "Amarillo" },
+            { id: 362, nombre: "fideos frescos de verduras", porcion: "1 plato tamaño postre (aprox 33 gr)", creditos: 2.5, calidad: "Amarillo" },
+            { id: 363, nombre: "fideos secos integrales", porcion: "1 plato de postre", creditos: 3, calidad: "Verde" },
+            { id: 364, nombre: "fideos, spaguetti seco de espinaca", porcion: "1 plato de postre", creditos: 3.5, calidad: "Amarillo" },
+            { id: 365, nombre: "flan casero", porcion: "1 compotera chica (aprox. 125 gr)", creditos: 7, calidad: "Amarillo" },
+            { id: 366, nombre: "Flan en polvo producto terminado", porcion: "1 compotera chica", creditos: 4, calidad: "Verde" },
+            { id: 367, nombre: "flan hecho de polvo", porcion: "1 compotera chica (aprox. 120 gr)", creditos: 4, calidad: "Amarillo" },
+            { id: 368, nombre: "Flan Light", porcion: "1 unidad", creditos: 3, calidad: "Verde" },
+            { id: 369, nombre: "flan light Cormillot", porcion: "1 compotera chica (100 gr)", creditos: 0.75, calidad: "Verde" },
+            { id: 370, nombre: "Flan light en polvo", porcion: "1 compotera chica", creditos: 2.5, calidad: "Verde" },
+            { id: 371, nombre: "flan light hecho de polvo", porcion: "1 compotera chica (aprox. 120 gr)", creditos: 2.5, calidad: "Verde" },
+            { id: 372, nombre: "flan light sabor vainilla", porcion: "1 pote (aprox. 120 gr)", creditos: 3.25, calidad: "Verde" },
+            { id: 373, nombre: "frambuesa", porcion: "1 taza tamaño té (aprox. 100 grs.)", creditos: 1, calidad: "Verde" },
+            { id: 374, nombre: "fruta abrillantada", porcion: "1 porción de 100 gr", creditos: 5, calidad: "Amarillo" },
+            { id: 375, nombre: "Fruta deshidratada promedio", porcion: "1 orejon", creditos: 0.5, calidad: "Amarillo" },
+            { id: 376, nombre: "Fruta promedio", porcion: "1 rodaja o 1 unidad", creditos: 1.5, calidad: "Verde" },
+            { id: 377, nombre: "Fruta seca promedio", porcion: "10 almendras 15 manies o 5 mariposas de nuez.", creditos: 1.5, calidad: "Rojo" },
+            { id: 378, nombre: "Frutas Citricas", porcion: "1 unidad chica", creditos: 1, calidad: "Verde" },
+            { id: 379, nombre: "frutas deshidratadas, promedio", porcion: "1 orejon", creditos: 0.5, calidad: "Amarillo" },
+            { id: 380, nombre: "Frutas envasadas light", porcion: "1 mitad", creditos: 0.25, calidad: "Verde" },
+            { id: 381, nombre: "frutillas", porcion: "1 taza tamaño té (aprox. 100 grs.)", creditos: 0.75, calidad: "Verde" },
+            { id: 382, nombre: "frutillas c/ 1 cda. de crema", porcion: "1 taza (100 Cal)", creditos: 3, calidad: "Verde" },
+            { id: 383, nombre: "galletas de arroz", porcion: "1 unidad (aprox. 8 gr)", creditos: 1, calidad: "Amarillo" },
+            { id: 384, nombre: "galletas de arroz arrocitas (cuadradas)", porcion: "3 unidades", creditos: 2.5, calidad: "rojo" },
+            { id: 385, nombre: "galletita bañada en chocolate Tita", porcion: "1 unidad", creditos: 3.5, calidad: "rojo" },
+            { id: 386, nombre: "galletita de salvado light", porcion: "1 unidad (aprox. 7 grs.)", creditos: 0.75, calidad: "Amarillo" },
+            { id: 387, nombre: "galletita dulce", porcion: "1 unidad (aprox. 5 gr)", creditos: 1, calidad: "rojo" },
+            { id: 388, nombre: "galletita dulce rellena", porcion: "1 unidad (aprox. 10 gr)", creditos: 1.75, calidad: "rojo" },
+            { id: 389, nombre: "galletita integral", porcion: "1 unidad (aprox. 5 grs.)", creditos: 0.5, calidad: "Amarillo" },
+            { id: 390, nombre: "galletita integral 50 % menos en grasa", porcion: "1 unidad (aprox. 5 grs.)", creditos: 0.5, calidad: "Amarillo" },
+            { id: 391, nombre: "galletita integral light", porcion: "1 unidad (aprox. 5 grs.)", creditos: 0.5, calidad: "Amarillo" },
+            { id: 392, nombre: "galletita integral sin sal", porcion: "1 unidad (aprox. 5 grs.)", creditos: 0.5, calidad: "Amarillo" },
+            { id: 393, nombre: "Galletita rellena bañada con chocolate", porcion: "1 unidad", creditos: 3, calidad: "Amarillo" },
+            { id: 394, nombre: "galletita rellena bañada en chocolate", porcion: "1 unidad (aprox. 20 gr)", creditos: 3, calidad: "rojo" },
+            { id: 395, nombre: "galletitas Club Social", porcion: "1 paquetito de 26 gr", creditos: 3, calidad: "Amarillo" },
+            { id: 396, nombre: "galletitas de agua", porcion: "1 porción de 100 gr", creditos: 16.5, calidad: "rojo" },
+            { id: 397, nombre: "Galletitas de agua con o sin sal", porcion: "1 unidad", creditos: 1, calidad: "Amarillo" },
+            { id: 398, nombre: "galletitas de agua con sal", porcion: "1 unidad (aprox. 5 grs.)", creditos: 1, calidad: "rojo" },
+            { id: 399, nombre: "galletitas de agua light", porcion: "1 unidad (aprox. 5 grs.)", creditos: 0.75, calidad: "rojo" },
+            { id: 400, nombre: "galletitas de agua sin sal", porcion: "1 unidad (aprox. 5 grs.)", creditos: 1, calidad: "rojo" },
+            { id: 401, nombre: "galletitas de salvado, bajo tenor graso", porcion: "6 unidades", creditos: 3, calidad: "Amarillo" },
+            { id: 402, nombre: "galletitas de salvado, Fargo", porcion: "unidad (aprox. 7,5 grs.)", creditos: 0.75, calidad: "Amarillo" },
+            { id: 403, nombre: "galletitas dulces 3 cereales, light", porcion: "5 unidades", creditos: 2.5, calidad: "Amarillo" },
+            { id: 404, nombre: "galletitas dulces con salvado", porcion: "3 unidades (aprox. 40 gr)", creditos: 4.25, calidad: "Amarillo" },
+            { id: 405, nombre: "galletitas dulces diet de Dietética Integral", porcion: "5 unidades (aprox. 30 grs.)", creditos: 3, calidad: "Amarillo" },
+            { id: 406, nombre: "galletitas dulces light", porcion: "6 unidades (aprox. 23 grs.)", creditos: 3, calidad: "Amarillo" },
+            { id: 407, nombre: "galletitas dulces limón light", porcion: "1 unidad (aprox. 5 grs.)", creditos: 0.5, calidad: "Amarillo" },
+            { id: 408, nombre: "Galletitas dulces rellenas", porcion: "1 unidad", creditos: 2, calidad: "Rojo" },
+            { id: 409, nombre: "galletitas dulces rellenas con sabor limón", porcion: "1 unidad chica (aprox. 25 gr)", creditos: 3.25, calidad: "Amarillo" },
+            { id: 410, nombre: "galletitas dulces simples", porcion: "2 unidades (aprox. 27 gr) (407 Cal/100gr)", creditos: 2.75, calidad: "Amarillo" },
+            { id: 411, nombre: "galletitas dulces simples bajas en grasa", porcion: "6 unidades (aprox. 4 gr)", creditos: 0.5, calidad: "Amarillo" },
+            { id: 412, nombre: "galletitas frutigran", porcion: "3 unidades", creditos: 4, calidad: "Amarillo" },
+            { id: 413, nombre: "Galletitas integral con o sin sal", porcion: "1 unidad", creditos: 0.5, calidad: "Amarillo" },
+            { id: 414, nombre: "galletitas saladas", porcion: "paquete de 3 unids. (aprox. 25 gr)", creditos: 4.25, calidad: "rojo" },
+            { id: 415, nombre: "galletitas saladas integrales", porcion: "paquete de 3 unids. (aprox. 25 gr)", creditos: 4.25, calidad: "rojo" },
+            { id: 416, nombre: "galletitas saladas integrales tipo snack", porcion: "paquete de de 3 unid. (aprox. 25 gr)", creditos: 4.25, calidad: "rojo" },
+            { id: 417, nombre: "galletitas saladas tipo snack", porcion: "paquete de de 3 unid. (aprox. 25 gr)", creditos: 4.25, calidad: "rojo" },
+            { id: 418, nombre: "Galletitas Vainillas", porcion: "1 unidad", creditos: 2, calidad: "Amarillo" },
+            { id: 419, nombre: "garbanzos", porcion: "1 taza de té en cocido (aprox 33 gr)", creditos: 2.5, calidad: "Amarillo" },
+            { id: 420, nombre: "garrapiñadas", porcion: "10 unidades", creditos: 2, calidad: "rojo" },
+            { id: 421, nombre: "garrapiñadas de almendras", porcion: "1 cda. sop. (10 unid.) (aprox. 15 grs.)", creditos: 2, calidad: "Amarillo" },
+            { id: 422, nombre: "gaseosa cola común", porcion: "1 vaso (aprox. 250 cm3)", creditos: 3, calidad: "Verde" },
+            { id: 423, nombre: "gaseosa cola light", porcion: "1 vaso (aprox. 250 cm3)", creditos: 0, calidad: "Verde" },
+            { id: 424, nombre: "gaseosa común", porcion: "1 vaso (aprox. 250 cm3)", creditos: 3, calidad: "Verde" },
+            { id: 425, nombre: "gaseosa light sabor naranja", porcion: "1 vaso (aprox. 250 cm3)", creditos: 0, calidad: "Verde" },
+            { id: 426, nombre: "gaseosa lima limón", porcion: "1 vaso (aprox. 250 cm3)", creditos: 2.75, calidad: "Verde" },
+            { id: 427, nombre: "gaseosa lima limón light", porcion: "1 vaso (aprox. 250 cm3)", creditos: 0, calidad: "Verde" },
+            { id: 428, nombre: "gaseosa naranja", porcion: "1 vaso (aprox. 250 cm3)", creditos: 3.75, calidad: "Verde" },
+            { id: 429, nombre: "Gaseosas Cola", porcion: "1  vaso", creditos: 3, calidad: "Verde" },
+            { id: 430, nombre: "Gelatina en polvo producto terminado", porcion: "1 compotera chica", creditos: 2, calidad: "Verde" },
+            { id: 431, nombre: "gelatina hecha de polvo para postre", porcion: "1 compotera chica (aprox. 120 gr)", creditos: 2, calidad: "Verde" },
+            { id: 432, nombre: "Gelatina Light en polvo", porcion: "1 compotera chica", creditos: 0, calidad: "Verde" },
+            { id: 433, nombre: "gelatina light hecha de polvo para postre", porcion: "1 compotera chica (aprox. 120 gr)", creditos: 0, calidad: "Verde" },
+            { id: 434, nombre: "germen de trigo", porcion: "1 cucharada sopera (aprox. 8 gr)", creditos: 0.5, calidad: "Amarillo" },
+            { id: 435, nombre: "gin & tonic", porcion: "1 vaso largo (aprox. 150 cm3)", creditos: 2.75, calidad: "Verde" },
+            { id: 436, nombre: "gin (bebida destilada)", porcion: "1 medida (aprox. 50 cm3)", creditos: 3, calidad: "Amarillo" },
+            { id: 437, nombre: "girasol tostado (Pipas)", porcion: "1 paquetito", creditos: 3, calidad: "rojo" },
+            { id: 438, nombre: "granola", porcion: "1 taza tamaño té (aprox. 30 gr)", creditos: 2.75, calidad: "Amarillo" },
+            { id: 439, nombre: "grisines", porcion: "1 unidad (aprox. 5 grs.)", creditos: 0.5, calidad: "Amarillo" },
+            { id: 440, nombre: "grisines de gluten sin sal", porcion: "1 unidad (aprox. 5 grs.)", creditos: 0.5, calidad: "Amarillo" },
+            { id: 441, nombre: "grisines de salvado", porcion: "10 unidades (aprox. 16 gr)", creditos: 1.75, calidad: "Amarillo" },
+            { id: 442, nombre: "grisines sin sal", porcion: "1 unidad (aprox. 5 grs.)", creditos: 0.5, calidad: "Amarillo" },
+            { id: 443, nombre: "grisines trisalvado Cormillot", porcion: "1 unidad (aprox. 5 grs.)", creditos: 0.5, calidad: "Amarillo" },
+            { id: 444, nombre: "grosellas", porcion: "1 taza tamaño té (aprox. 150 gr)", creditos: 1.5, calidad: "Verde" },
+            { id: 445, nombre: "guayaba", porcion: "1 unidad (aprox. 25 grs.)", creditos: 0.25, calidad: "Verde" },
+            { id: 446, nombre: "guinda", porcion: "1 taza tamaño té (aprox. 100 gr)", creditos: 0.5, calidad: "Verde" },
+            { id: 447, nombre: "guiso de arroz", porcion: "1 plato hondo (200 gr)", creditos: 9, calidad: "Amarillo" },
+            { id: 448, nombre: "guiso de lentejas", porcion: "1 plato hondo (200 gr)", creditos: 9, calidad: "Amarillo" },
+            { id: 449, nombre: "habanitos cubiertos de chocolate", porcion: "1 unidad (aprox 5 gr)", creditos: 0.75, calidad: "rojo" },
+            { id: 450, nombre: "habas", porcion: "1 taza tam. té cocidas (aprox. 33 grs.)", creditos: 2.25, calidad: "Amarillo" },
+            { id: 451, nombre: "Hamburguesa", porcion: "1 unidad", creditos: 6, calidad: "Amarillo" },
+            { id: 452, nombre: "hamburguesa", porcion: "1 unidad (aprox. 80 gr)", creditos: 6, calidad: "Amarillo" },
+            { id: 453, nombre: "hamburguesa comercial light", porcion: "1 unidad (aprox. 80 gr)", creditos: 4, calidad: "Amarillo" },
+            { id: 454, nombre: "hamburguesa de pescado", porcion: "1 unidad", creditos: 3, calidad: "Amarillo" },
+            { id: 455, nombre: "hamburguesa de pescado c/ espinaca", porcion: "1 unidad", creditos: 2, calidad: "Verde" },
+            { id: 456, nombre: "hamburguesa de soja", porcion: "1 unidad (aprox. 80 gr)", creditos: 2.5, calidad: "Amarillo" },
+            { id: 457, nombre: "Hamburguesa light", porcion: "1 unidad", creditos: 3.5, calidad: "Amarillo" },
+            { id: 458, nombre: "hamburguesa light Cormillot", porcion: "1 unidad (aprox. 80 gr)", creditos: 3, calidad: "Amarillo" },
+            { id: 459, nombre: "harina de avena", porcion: "1 cucharada sopera (aprox. 10 gr)", creditos: 1, calidad: "Amarillo" },
+            { id: 460, nombre: "Harina de trigo", porcion: "1 cda sopera", creditos: 1, calidad: "Amarillo" },
+            { id: 461, nombre: "harina de trigo común", porcion: "1 cucharada sopera (aprox. 10 gr)", creditos: 1, calidad: "Amarillo" },
+            { id: 462, nombre: "harina de trigo integral", porcion: "1 cucharada sopera (aprox. 10 gr)", creditos: 0.75, calidad: "Amarillo" },
+            { id: 463, nombre: "helado cono de vainilla", porcion: "1 unidad (aprox 120 gr)", creditos: 7, calidad: "Amarillo" },
+            { id: 464, nombre: "helado de agua", porcion: "1 bocha o palito (100 gr) (94 cal)", creditos: 2.75, calidad: "Verde" },
+            { id: 465, nombre: "helado de agua light", porcion: "1 unidad (aprox. 70 cc)", creditos: 2.5, calidad: "Amarillo" },
+            { id: 466, nombre: "helado de crema", porcion: "1 bocha o 1 palito (aprox. 100 gr)", creditos: 5.5, calidad: "Amarillo" },
+            { id: 467, nombre: "helado de crema americana light c/ mermelada de frutilla", porcion: "1 unidad (80 Cal.)", creditos: 2, calidad: "Verde" },
+            { id: 468, nombre: "helado de fruta", porcion: "1 bocha o palito (100 gr)", creditos: 3, calidad: "Verde" },
+            { id: 469, nombre: "Helado Diet Cormillot", porcion: "1 pote individual", creditos: 2.5, calidad: "Verde" },
+            { id: 470, nombre: "Helado Diet Freddo", porcion: "1 bocha", creditos: 2, calidad: "Verde" },
+            { id: 471, nombre: "helado light", porcion: "1 bocha (aprox. 100 gr)", creditos: 2.5, calidad: "Verde" },
+            { id: 472, nombre: "Helado Light Cormillot", porcion: "1 pote individual", creditos: 4, calidad: "Verde" },
+            { id: 473, nombre: "helado light Cormillot choc. y d. de leche", porcion: "1 pote individual (aprox. 125 gr)", creditos: 4, calidad: "Amarillo" },
+            { id: 474, nombre: "helado light de crema c/ salsa de frutilla", porcion: "1 pote (aprox. 80 gr)", creditos: 2, calidad: "Amarillo" },
+            { id: 475, nombre: "helado light de limòn", porcion: "1 bocha", creditos: 2.75, calidad: "Amarillo" },
+            { id: 476, nombre: "helado light Freddo", porcion: "1 bocha", creditos: 3.5, calidad: "Amarillo" },
+            { id: 477, nombre: "helados diet Cormillot", porcion: "1 pote individual", creditos: 2.5, calidad: "Verde" },
+            { id: 478, nombre: "Higado", porcion: "1 bife chico", creditos: 2.5, calidad: "Verde" },
+            { id: 479, nombre: "hígado bife", porcion: "1 porción chica (aprox.100 grs.)", creditos: 2.75, calidad: "Verde" },
+            { id: 480, nombre: "higo", porcion: "1 unidad (aprox. 50 gr)", creditos: 0.5, calidad: "Verde" },
+            { id: 481, nombre: "higo (fruta fresca)", porcion: "2 unidades", creditos: 1.5, calidad: "Verde" },
+            { id: 482, nombre: "higo deshidratado", porcion: "1 orejón (aprox. 10 gr)", creditos: 0.75, calidad: "Amarillo" },
+            { id: 483, nombre: "hinojo", porcion: "1 unidad chica", creditos: 0, calidad: "Verde" },
+            { id: 484, nombre: "hongos", porcion: "1 plato tamaño postre (aprox. 50 gr)", creditos: 0, calidad: "Verde" },
+            { id: 485, nombre: "Hortalizas promedio", porcion: "1 taza grande en cocido", creditos: 0, calidad: "Verde" },
+            { id: 486, nombre: "huevito de pascuas de 8 gr", porcion: "1 unidad de 8 gr", creditos: 1.25, calidad: "rojo" },
+            { id: 487, nombre: "Huevo", porcion: "1 unidad", creditos: 2, calidad: "Amarillo" },
+            { id: 488, nombre: "huevo", porcion: "1 unidad (aprox. 50 g)", creditos: 2.25, calidad: "Amarillo" },
+            { id: 489, nombre: "huevo de codorniz", porcion: "1 unidad", creditos: 0.5, calidad: "Verde" },
+            { id: 490, nombre: "huevo de pascua de 30 gr", porcion: "1 unidad (aprox. 30 gr)", creditos: 5.25, calidad: "rojo" },
+            { id: 491, nombre: "huevo de pascua de 50 gr", porcion: "1 unidad mediana (aprox. 50 gr)", creditos: 8.25, calidad: "rojo" },
+            { id: 492, nombre: "huevo omega 3", porcion: "1 unidad (aprox. 50 g)", creditos: 2, calidad: "Amarillo" },
+            { id: 493, nombre: "jalea", porcion: "1 cucharada de postre (aprx. 10 gr)", creditos: 0.75, calidad: "Amarillo" },
+            { id: 494, nombre: "Jamon cocido", porcion: "1 feta", creditos: 1.5, calidad: "Amarillo" },
+            { id: 495, nombre: "jamón cocido", porcion: "1 feta (aprox. 15 gr)", creditos: 0.75, calidad: "Amarillo" },
+            { id: 496, nombre: "jamón crudo", porcion: "1 feta (aprox 15 gr)", creditos: 2.5, calidad: "rojo" },
+            { id: 497, nombre: "jerez dulce", porcion: "1 medida (aprox. 50 cm3)", creditos: 1.75, calidad: "Amarillo" },
+            { id: 498, nombre: "jugo Baggio light de manzana", porcion: "1 envase individual", creditos: 2.5, calidad: "Verde" },
+            { id: 499, nombre: "jugo Cítric de naranja (no es dietético)", porcion: "100 cm3", creditos: 1, calidad: "Verde" },
+            { id: 500, nombre: "jugo de frutas envasado", porcion: "1 envase (aprox. 250 cm3)", creditos: 3, calidad: "Verde" },
+            { id: 501, nombre: "jugo de frutas envasado light", porcion: "1 envase (aprox. 250 cm3)", creditos: 1, calidad: "Verde" },
+            { id: 502, nombre: "jugo de limón", porcion: "1 cucharada de postre (aprox 10 gr)", creditos: 0, calidad: "Verde" },
+            { id: 503, nombre: "Jugo de manzana envasado", porcion: "1  vaso", creditos: 2.5, calidad: "Verde" },
+            { id: 504, nombre: "jugo de manzana envasado (comercial)", porcion: "1 vaso (aprox. 250 cm3)", creditos: 2.75, calidad: "Verde" },
+            { id: 505, nombre: "Jugo de naranja envasado", porcion: "1  vaso", creditos: 3, calidad: "Verde" },
+            { id: 506, nombre: "jugo de naranja exprimido", porcion: "1 vaso con 2 unid. (aprox. 250 cm3)", creditos: 2, calidad: "Verde" },
+            { id: 507, nombre: "jugo de naranja light envasado", porcion: "1 vaso (aprox. 250 cm3)", creditos: 4.25, calidad: "Verde" },
+            { id: 508, nombre: "jugo de soja común sabor natural", porcion: "1 vaso (aprox. 250 cm3)", creditos: 2, calidad: "Verde" },
+            { id: 509, nombre: "jugo de soja saborizada", porcion: "1 vaso (aprox. 250 cm3)", creditos: 2.5, calidad: "Verde" },
+            { id: 510, nombre: "Jugo de soja saborizado light", porcion: "1  vaso", creditos: 1, calidad: "Verde" },
+            { id: 511, nombre: "jugo en polvo", porcion: "1 vaso (aprox. 250 cm3)", creditos: 4.25, calidad: "Verde" },
+            { id: 512, nombre: "jugo en polvo light", porcion: "1 vaso (aprox. 250 cm3)", creditos: 0, calidad: "Verde" },
+            { id: 513, nombre: "jugo envasado de frutas", porcion: "1 vaso (aprox. 250 cm3)", creditos: 2.5, calidad: "Verde" },
+            { id: 514, nombre: "jugo envasado light", porcion: "1 vaso (aprox. 250 cm3)", creditos: 1, calidad: "Verde" },
+            { id: 515, nombre: "jugo light de soja", porcion: "1 vaso (aprox. 250 cm3)", creditos: 0.5, calidad: "Verde" },
+            { id: 516, nombre: "jugo para diluir", porcion: "1 vaso (aprox. 250 cm3)", creditos: 0.5, calidad: "Verde" },
+            { id: 517, nombre: "jugo para diluir ditético", porcion: "1 vaso (aprox. 250 cm3)", creditos: 0, calidad: "Verde" },
+            { id: 518, nombre: "jurel al natural", porcion: "1 porción de 100 gr", creditos: 0.5, calidad: "Verde" },
+            { id: 519, nombre: "kani kama (surimi)", porcion: "1 unidad (aprox. 18 grs.)", creditos: 0.25, calidad: "Amarillo" },
+            { id: 520, nombre: "ketchup", porcion: "1 cda. Tam. postre (aprox. 10 gr)", creditos: 0, calidad: "Verde" },
+            { id: 521, nombre: "kiwi", porcion: "1 unidad (aprox.65 gr)", creditos: 0.5, calidad: "Verde" },
+            { id: 522, nombre: "krill", porcion: "1 taza tamaño té", creditos: 1.5, calidad: "Verde" },
+            { id: 523, nombre: "langostino", porcion: "1 unidad (aprox. 75 gr)", creditos: 0.75, calidad: "Verde" },
+            { id: 524, nombre: "leche chocolatada común", porcion: "1 vaso o cartoncito (aprox. 200 cm3.)", creditos: 3.5, calidad: "Verde" },
+            { id: 525, nombre: "leche chocolatada light", porcion: "1 vaso o cartoncito (aprox. 200 cm3.)", creditos: 1.5, calidad: "Verde" },
+            { id: 526, nombre: "leche con CLA", porcion: "1 taza tamaño té", creditos: 1, calidad: "Verde" },
+            { id: 527, nombre: "leche con omega 3 y fitoesteroles", porcion: "1 taza tamaño té (aprox. 200 cm3.)", creditos: 0.75, calidad: "Verde" },
+            { id: 528, nombre: "leche de soja", porcion: "1 taza tamaño té", creditos: 2, calidad: "Verde" },
+            { id: 529, nombre: "Leche Decremada fluida", porcion: "1 taza té", creditos: 0.5, calidad: "Verde" },
+            { id: 530, nombre: "Leche descr. Ser con frutos del trópico", porcion: "1 vaso (aprox. 200 cm3)", creditos: 0.5, calidad: "Verde" },
+            { id: 531, nombre: "leche descremada en polvo", porcion: "1 cucharada sopera (aprox. 20 gr)", creditos: 0.75, calidad: "Amarillo" },
+            { id: 532, nombre: "leche descremada fluida", porcion: "1 taza tamaño té (aprox.200 gr)", creditos: 0.5, calidad: "Verde" },
+            { id: 533, nombre: "Leche entera", porcion: "1 taza  té", creditos: 3, calidad: "Verde" },
+            { id: 534, nombre: "leche entera en polvo", porcion: "1 cucharada sopera (aprox. 20 gr)", creditos: 2.75, calidad: "Amarillo" },
+            { id: 535, nombre: "leche entera fluida", porcion: "1 taza tamaño té (aprox.200 gr)", creditos: 3.25, calidad: "Verde" },
+            { id: 536, nombre: "leche fermentada light", porcion: "1 vaso", creditos: 1, calidad: "Verde" },
+            { id: 537, nombre: "leche fermentada light c/ prebióticos", porcion: "1 botellita de 100 gr", creditos: 0.25, calidad: "Verde" },
+            { id: 538, nombre: "leche parcialmente descremada", porcion: "1 vaso (aprox. 200 cm3)", creditos: 1.75, calidad: "Verde" },
+            { id: 539, nombre: "leche parcialmente descremada en polvo", porcion: "1 cucharada sopera", creditos: 1.5, calidad: "rojo" },
+            { id: 540, nombre: "leche parcialmente descremada, extra calcio deslactosada", porcion: "1 tza tamaño té (aprox. 200 cm3)", creditos: 1.5, calidad: "Verde" },
+            { id: 541, nombre: "leche parcialmente descremada, fortificada c/ calcio", porcion: "1 vaso (aprox. 200 cm3)", creditos: 1.5, calidad: "Verde" },
+            { id: 542, nombre: "lechuga", porcion: "1 plato tamaño postre (aprox. 50 gr)", creditos: 0, calidad: "Verde" },
+            { id: 543, nombre: "Legumbres promedio", porcion: "1 taza de te en cocido", creditos: 2, calidad: "Amarillo" },
+            { id: 544, nombre: "lengua a la vinagreta", porcion: "1 rodaja gruesa (180 grs.)", creditos: 7.5, calidad: "Amarillo" },
+            { id: 545, nombre: "lenguado", porcion: "1 filet grande", creditos: 1.5, calidad: "Amarillo" },
+            { id: 546, nombre: "lentejas", porcion: "1 plato tmño postre (aprox. 33 gr. en cocido)", creditos: 2.25, calidad: "Amarillo" },
+            { id: 547, nombre: "lentejas de chocolate", porcion: "1 paquete chico (aprox. 20 gr)", creditos: 3, calidad: "rojo" },
+            { id: 548, nombre: "Levadura de cerveza", porcion: "1 cda sopera", creditos: 0.5, calidad: "Amarillo" },
+            { id: 549, nombre: "levadura de cerveza", porcion: "1 cucharada sopera (aprox. 10 gr)", creditos: 0.75, calidad: "Amarillo" },
+            { id: 550, nombre: "levadura de cerveza seca Cormillot", porcion: "1 cucharada tipo té", creditos: 0.25, calidad: "Amarillo" },
+            { id: 551, nombre: "licor", porcion: "1 medida (aprox. 50 cm3)", creditos: 3, calidad: "Amarillo" },
+            { id: 552, nombre: "Licores", porcion: "1 medida", creditos: 3, calidad: "Amarillo" },
+            { id: 553, nombre: "licuado c/ azúcar y leche entera", porcion: "1 vaso (aprox. 250 cm3)", creditos: 6.25, calidad: "Verde" },
+            { id: 554, nombre: "licuado light de durazno", porcion: "1 vaso (aprox. 250 cm3)", creditos: 1, calidad: "Verde" },
+            { id: 555, nombre: "limón", porcion: "1 unidad (aprox. 100 grs.)", creditos: 0.5, calidad: "Verde" },
+            { id: 556, nombre: "longaniza", porcion: "1 unidad (aprox. 100 grs.)", creditos: 12.5, calidad: "Amarillo" },
+            { id: 557, nombre: "magdalena de chocolate con relleno de dulce de leche", porcion: "1 unidad (aprox. 35 gr)", creditos: 4.75, calidad: "Amarillo" },
+            { id: 558, nombre: "magdalena de vainillas", porcion: "1 unidad (aprox. 30 gramos)", creditos: 4.5, calidad: "rojo" },
+            { id: 559, nombre: "maíz inflado", porcion: "1 paquete chico o 1 taza de té", creditos: 1.75, calidad: "Amarillo" },
+            { id: 560, nombre: "maíz inflado azucarado", porcion: "1 taza tam té o 1 paquete chic (aprox. 10 gr)", creditos: 1.75, calidad: "rojo" },
+            { id: 561, nombre: "malta", porcion: "1 cda. tamaño postre (aprox. 10 gr)", creditos: 0.25, calidad: "Verde" },
+            { id: 562, nombre: "mandarina", porcion: "1 unidad chica (aprox 50 g)", creditos: 0.5, calidad: "Verde" },
+            { id: 563, nombre: "mandioca", porcion: "1 unidad chica (aprox. 100 gr)", creditos: 3.75, calidad: "Amarillo" },
+            { id: 564, nombre: "mango", porcion: "1 unidad (aprox. 100 gr)", creditos: 1.5, calidad: "Verde" },
+            { id: 565, nombre: "maní", porcion: "1 cda sopera o 15 unid. (aprox. 10 gr)", creditos: 1.75, calidad: "rojo" },
+            { id: 566, nombre: "Mani con chocolate", porcion: "1 Paquete chico", creditos: 3, calidad: "Amarillo" },
+            { id: 567, nombre: "maní con chocolate", porcion: "1 paquete chico (aprox. 20 gr)", creditos: 3, calidad: "rojo" },
+            { id: 568, nombre: "manteca", porcion: "1 cucharada de postre (10 gr)", creditos: 3.75, calidad: "rojo" },
+            { id: 569, nombre: "manteca light", porcion: "1 cucharada de postre (aprox. 10 gr)", creditos: 1.5, calidad: "rojo" },
+            { id: 570, nombre: "mantecol (barra pasta de maní)", porcion: "1 unidad de 25 gr", creditos: 4, calidad: "rojo" },
+            { id: 571, nombre: "manzana (fruta fresca)", porcion: "1 unidad  chica (aprox 100 gr)", creditos: 1, calidad: "Verde" },
+            { id: 572, nombre: "manzana asada", porcion: "1 unidad media. (aprox. 100 gr, 60 cal)", creditos: 1, calidad: "Verde" },
+            { id: 573, nombre: "manzana deshidratada Cormillot", porcion: "1 paquete (20 gr)", creditos: 2, calidad: "Amarillo" },
+            { id: 574, nombre: "manzana fruta deshidratada", porcion: "1 orejón (aprox. 10 gr)", creditos: 0.75, calidad: "Amarillo" },
+            { id: 575, nombre: "manzana verde", porcion: "1 unidad  (aprox 100 gr)", creditos: 1, calidad: "Verde" },
+            { id: 576, nombre: "margarina", porcion: "1 cucharada de postre (aprox 10 gr)", creditos: 3.5, calidad: "rojo" },
+            { id: 577, nombre: "Margarina % trans con o sin omega 3", porcion: "1 Cda postre", creditos: 3, calidad: "Rojo" },
+            { id: 578, nombre: "margarina 0% trans c/ calcio", porcion: "1 cucharada de postre (10 gr)", creditos: 2, calidad: "rojo" },
+            { id: 579, nombre: "Margarina 0% Trans promedio", porcion: "1 Cda postre", creditos: 1.5, calidad: "Amarillo" },
+            { id: 580, nombre: "margarina 0% trans s/ sal y c/ fibras", porcion: "1 cucharada de postre (10 gr)", creditos: 1, calidad: "Amarillo" },
+            { id: 581, nombre: "margarina light", porcion: "1 cucharada de postre (10 gr)", creditos: 2.75, calidad: "rojo" },
+            { id: 582, nombre: "margarina light con calcio", porcion: "1 cucharada de postre (10 gr)", creditos: 2.5, calidad: "rojo" },
+            { id: 583, nombre: "margarina light o% trans promedio (con omega 3, calcio, fibra y fitoestanoles)", porcion: "1 cucharada de postre (10 gr)", creditos: 1.5, calidad: "rojo" },
+            { id: 584, nombre: "margarina sin trans c/ omega 3", porcion: "1 cucharada de postre (10 gr)", creditos: 3, calidad: "Rojo" },
+            { id: 585, nombre: "margarina sin trans con omega 3", porcion: "1 cda. de postre (aprox. 10 gr)", creditos: 3.75, calidad: "rojo" },
+            { id: 586, nombre: "mariscos", porcion: "1 taza tamaño té (aprox. 150 gr)", creditos: 1.25, calidad: "Verde" },
+            { id: 587, nombre: "masa de canelón", porcion: "1 unidad (aprox. 27 gr)", creditos: 3, calidad: "Amarillo" },
+            { id: 588, nombre: "masa light para empanadas", porcion: "1 unidad (aprox. 30 gr)", creditos: 3, calidad: "Amarillo" },
+            { id: 589, nombre: "masa light para tarta", porcion: "1 porción c/ 1 tapa (aprox. 30 gr)", creditos: 3, calidad: "Amarillo" },
+            { id: 590, nombre: "masa para empanadas", porcion: "1 unidad (aprox. 30 gr)", creditos: 4, calidad: "Amarillo" },
+            { id: 591, nombre: "masa para lasagna", porcion: "1 porción (aprox. 80 gr)", creditos: 7, calidad: "Amarillo" },
+            { id: 592, nombre: "masa para tarta", porcion: "1 porción c/ 1 tapa (aprox. 30 gr)", creditos: 4, calidad: "Amarillo" },
+            { id: 593, nombre: "mayonesa", porcion: "1 cda. tamaño postre (aprox. 10 gr)", creditos: 2.5, calidad: "rojo" },
+            { id: 594, nombre: "mayonesa de ave", porcion: "1 plato de postre", creditos: 7, calidad: "Amarillo" },
+            { id: 595, nombre: "mayonesa Hellman Deleite", porcion: "1 porción de 28 gr", creditos: 1, calidad: "Amarillo" },
+            { id: 596, nombre: "mayonesa light", porcion: "1 cda sopera (aprox. 15 gr)", creditos: 0.75, calidad: "Amarillo" },
+            { id: 597, nombre: "medallon de espinaca (vegetalex)", porcion: "1 unidad", creditos: 2.5, calidad: "Amarillo" },
+            { id: 598, nombre: "medallón de menta light", porcion: "1 unidad de 20 gr", creditos: 1, calidad: "Amarillo" },
+            { id: 599, nombre: "medallones de pollo c/queso, frito", porcion: "1 unidad", creditos: 6, calidad: "Amarillo" },
+            { id: 600, nombre: "medialuna", porcion: "1 unidad chica (aprox 35 gr)", creditos: 4.75, calidad: "Amarillo" },
+            { id: 601, nombre: "Medialunas", porcion: "1 unidad chica", creditos: 4.5, calidad: "Amarillo" },
+            { id: 602, nombre: "medialunas light", porcion: "1 unidad (25 gr)", creditos: 2.5, calidad: "Amarillo" },
+            { id: 603, nombre: "mejillones al natural", porcion: "1 taza tamaño te (aprox. 200 gr)", creditos: 1.25, calidad: "Verde" },
+            { id: 604, nombre: "melón", porcion: "1 tajada 2 dedos de grosor (aprox. 100 gr)", creditos: 0.5, calidad: "Verde" },
+            { id: 605, nombre: "merluza", porcion: "1 filet grande (aprox. 150 gr)", creditos: 1.5, calidad: "Verde" },
+            { id: 606, nombre: "mermelada", porcion: "1 cda. tamaño postre (aprox. 10 gr)", creditos: 0.75, calidad: "Amarillo" },
+            { id: 607, nombre: "mermelada light", porcion: "1 cda. tamaño postre (aprox. 10 gr)", creditos: 0.25, calidad: "Verde" },
+            { id: 608, nombre: "Mermeladas", porcion: "1 Cda postre", creditos: 0.75, calidad: "Amarillo" },
+            { id: 609, nombre: "miel", porcion: "1 cucharada de postre (aprox. 10 gr)", creditos: 0.75, calidad: "Amarillo" },
+            { id: 610, nombre: "mignón de pan francés", porcion: "1 unidad (40 gr)", creditos: 3.75, calidad: "Amarillo" },
+            { id: 611, nombre: "mignón de pan integral", porcion: "1 unidad (40 gr)", creditos: 2.5, calidad: "Amarillo" },
+            { id: 612, nombre: "mijo", porcion: "1 cda. sopera (aprox. 10 gr)", creditos: 0.75, calidad: "Amarillo" },
+            { id: 613, nombre: "milanesa de carne al horno", porcion: "1 unidad mediana (100 gr)", creditos: 5, calidad: "Amarillo" },
+            { id: 614, nombre: "milanesa de carne frita", porcion: "1 unidad chica", creditos: 8, calidad: "Amarillo" },
+            { id: 615, nombre: "milanesa de pollo al horno", porcion: "1 unidad de 150 gr", creditos: 7, calidad: "Amarillo" },
+            { id: 616, nombre: "milanesa de pollo frita", porcion: "1 unidad chica", creditos: 4, calidad: "Amarillo" },
+            { id: 617, nombre: "milanesa de soja", porcion: "1 unidad (aprox. 80 gr)", creditos: 3, calidad: "Amarillo" },
+            { id: 618, nombre: "miso", porcion: "1 taza tamaño té", creditos: 2, calidad: "Amarillo" },
+            { id: 619, nombre: "molleja", porcion: "1 unidad chica (aprox. 50 gr)", creditos: 3.75, calidad: "Amarillo" },
+            { id: 620, nombre: "mondongo", porcion: "1 porción de 100 gr", creditos: 3, calidad: "Verde" },
+            { id: 621, nombre: "mora", porcion: "1 taza tamaño té (aprox. 150 gr)", creditos: 1.5, calidad: "Verde" },
+            { id: 622, nombre: "morcilla", porcion: "1 unidad (aprox. 100 gr)", creditos: 8.25, calidad: "Amarillo" },
+            { id: 623, nombre: "morrones enlatados", porcion: "1 mitad", creditos: 0, calidad: "Verde" },
+            { id: 624, nombre: "mortadela", porcion: "1 feta (aprox. 15 gr)", creditos: 1.5, calidad: "Amarillo" },
+            { id: 625, nombre: "mostaza", porcion: "1 cda. tamaño postre (aprox. 10 gr)", creditos: 0, calidad: "Verde" },
+            { id: 626, nombre: "mousse de limón light Cormillot", porcion: "1 pote", creditos: 2, calidad: "Verde" },
+            { id: 627, nombre: "mousse de queso light c/ colchón de fruta Nestle", porcion: "1 porción de aprox 100 gr", creditos: 3.25, calidad: "Amarillo" },
+            { id: 628, nombre: "mousse de queso light Cormillot", porcion: "1 pote individual (aprox. 100 gr)", creditos: 1.5, calidad: "Verde" },
+            { id: 629, nombre: "Mousse en Polvo producto terminado", porcion: "1 compotera chica", creditos: 9, calidad: "Amarillo" },
+            { id: 630, nombre: "mousse hecho de polvo para postre", porcion: "1 compotera chica (aprox. 120 gr)", creditos: 9, calidad: "Amarillo" },
+            { id: 631, nombre: "Mousse light", porcion: "1 pote o 1 compotera", creditos: 4.5, calidad: "Verde" },
+            { id: 632, nombre: "mousse light", porcion: "1 compotera (aprox. 100 gr)", creditos: 3.25, calidad: "Amarillo" },
+            { id: 633, nombre: "mousse light sabor cheesecake", porcion: "1 pote (aprox. 100 gr)", creditos: 1.75, calidad: "Verde" },
+            { id: 634, nombre: "mozzarella", porcion: "1 cassette de música (aprox.50 grs.)", creditos: 4.5, calidad: "Amarillo" },
+            { id: 635, nombre: "mozzarella light", porcion: "1 cassette de música", creditos: 3, calidad: "Amarillo" },
+            { id: 636, nombre: "mozzarella magra sin sal", porcion: "1 cassette de música (aprox.50 grs.)", creditos: 3, calidad: "Amarillo" },
+            { id: 637, nombre: "muesli", porcion: "1 taza tipo té (aprox. 30 gr)", creditos: 2.75, calidad: "Amarillo" },
+            { id: 638, nombre: "multicereal Cormillot fortificado", porcion: "1 porción de 40 gr, 3 cdas soperas", creditos: 3, calidad: "Amarillo" },
+            { id: 639, nombre: "muslo de pavo sin piel", porcion: "1 porción de 150 gr", creditos: 5.5, calidad: "Amarillo" },
+            { id: 640, nombre: "muslo de pollo sin piel", porcion: "1 unidad mediana (aprox. 100 grs.)", creditos: 2, calidad: "Verde" },
+            { id: 641, nombre: "nachos", porcion: "1 taza tamaño té (aprox. 20 grs.)", creditos: 3.25, calidad: "rojo" },
+            { id: 642, nombre: "naranja (fruta)", porcion: "1 unidad chica (aprox. 100 grs.)", creditos: 1, calidad: "Verde" },
+            { id: 643, nombre: "naranja grande (fruta)", porcion: "1 unidad grande (150 gramos)", creditos: 1.5, calidad: "Verde" },
+            { id: 644, nombre: "nueces", porcion: "5 mariposas o 1 cda. sopera (10 gr)", creditos: 1.5, calidad: "rojo" },
+            { id: 645, nombre: "ñoquis de calabaza", porcion: "1 plato postre", creditos: 6, calidad: "Amarillo" },
+            { id: 646, nombre: "ñoquis de papa", porcion: "1 plato postre (aprx. 60 gr)", creditos: 5, calidad: "Amarillo" },
+            { id: 647, nombre: "ñoquis de zapallo", porcion: "1 plato playo (150 gr)", creditos: 6, calidad: "Amarillo" },
+            { id: 648, nombre: "ñoquis light de espinaca", porcion: "1 plato tamaño postre (aprox.60 gr)", creditos: 3.5, calidad: "Amarillo" },
+            { id: 649, nombre: "omellette de jamón y queso light c/ rocío veg", porcion: "1 porción (aprox. 150 gr)", creditos: 3, calidad: "Verde" },
+            { id: 650, nombre: "omellette jamón y queso light c/ aceite", porcion: "1 porción (aprox. 140 gr)", creditos: 7.5, calidad: "Amarillo" },
+            { id: 651, nombre: "orejones de durazno", porcion: "1 paquete chico ( aprox. 30 gr", creditos: 2.25, calidad: "Amarillo" },
+            { id: 652, nombre: "paleta", porcion: "1 feta (aprox. 25 gr)", creditos: 0.5, calidad: "Verde" },
+            { id: 653, nombre: "palitos salados", porcion: "1 taza tamaño té (aprox. 40 gr)", creditos: 7.75, calidad: "rojo" },
+            { id: 654, nombre: "palmitos", porcion: "1 unidad (aprox. 50 gr)", creditos: 0, calidad: "Verde" },
+            { id: 655, nombre: "palta", porcion: "1 unidad chica (aprox. 100 gr)", creditos: 5.25, calidad: "Amarillo" },
+            { id: 656, nombre: "Pan Arabe", porcion: "1 unidad chica", creditos: 4, calidad: "Amarillo" },
+            { id: 657, nombre: "pan árabe", porcion: "1 unidad chica (aprox. 50 gr)", creditos: 4.5, calidad: "Amarillo" },
+            { id: 658, nombre: "pan baguette", porcion: "1 rodaja (aprox. 25 gr)", creditos: 2.25, calidad: "Amarillo" },
+            { id: 659, nombre: "pan blanco light c/ fitoesteroles", porcion: "1 rebanadas (aprox. 50 gr)", creditos: 4.25, calidad: "Amarillo" },
+            { id: 660, nombre: "pan de centeno", porcion: "1 rodaja (aprox. 25 gr)", creditos: 1.75, calidad: "Amarillo" },
+            { id: 661, nombre: "Pan de salvado", porcion: "1 rodaja", creditos: 2, calidad: "Amarillo" },
+            { id: 662, nombre: "pan de salvado", porcion: "1 rebanada (aprox. 25 gr)", creditos: 1.75, calidad: "Amarillo" },
+            { id: 663, nombre: "pan de salvado light", porcion: "1 rodaja (aprox. 25 gr)", creditos: 1.25, calidad: "Amarillo" },
+            { id: 664, nombre: "pan dulce", porcion: "1 rodaja mediana (aprox. 100 gr)", creditos: 12.75, calidad: "Amarillo" },
+            { id: 665, nombre: "Pan frances", porcion: "1 rodaja", creditos: 2.5, calidad: "Amarillo" },
+            { id: 666, nombre: "pan francés (mignon)", porcion: "1 mignon (aprox. 40 gr)", creditos: 3.75, calidad: "Amarillo" },
+            { id: 667, nombre: "pan francés (rodaja)", porcion: "1 rodaja (aprox. 25 grs.)", creditos: 2.25, calidad: "Amarillo" },
+            { id: 668, nombre: "pan integral", porcion: "1 mignon (aprox. 40 gr)", creditos: 2.5, calidad: "Amarillo" },
+            { id: 669, nombre: "pan integral doble salvado c/ fitoesteroles", porcion: "1 rebanada (aprox. 25 gr)", creditos: 3.25, calidad: "Amarillo" },
+            { id: 670, nombre: "pan lactal blanco", porcion: "1 rodaja (aprox. 25 gr)", creditos: 2.25, calidad: "Amarillo" },
+            { id: 671, nombre: "pan lactal blanco light", porcion: "1 rodaja (aprox. 25 gr)", creditos: 1.75, calidad: "Amarillo" },
+            { id: 672, nombre: "pan lactal integral", porcion: "1 rodaja (aprox. 25 grs.)", creditos: 1.75, calidad: "Amarillo" },
+            { id: 673, nombre: "Pan miñon de pan Frances", porcion: "1 unidad", creditos: 3.5, calidad: "Amarillo" },
+            { id: 674, nombre: "Pan miñon integral", porcion: "1 unidad", creditos: 2.5, calidad: "Amarillo" },
+            { id: 675, nombre: "pan rallado", porcion: "1 cucharada sopera (aprox. 10 gr)", creditos: 1.5, calidad: "rojo" },
+            { id: 676, nombre: "panceta ahumada", porcion: "1 feta (aprox. 25 gr)", creditos: 4.5, calidad: "rojo" },
+            { id: 677, nombre: "panqueque light de ricota", porcion: "1 unidad chica (150 cal.)", creditos: 3, calidad: "Amarillo" },
+            { id: 678, nombre: "Papa", porcion: "1 unidad chica", creditos: 2.5, calidad: "Verde" },
+            { id: 679, nombre: "papa", porcion: "1 unidad chica (aprox. 120 grs.)", creditos: 2.5, calidad: "Verde" },
+            { id: 680, nombre: "papas bastón congeladas", porcion: "1 plato postre (aprox. 200 gr)", creditos: 9, calidad: "Amarillo" },
+            { id: 681, nombre: "papas fritas", porcion: "1 porción mediana (110 gr)", creditos: 9.5, calidad: "Amarillo" },
+            { id: 682, nombre: "papas fritas aireadas reducidas en grasas", porcion: "1 paquete chico (21 gr) (95 cal)", creditos: 3, calidad: "Amarillo" },
+            { id: 683, nombre: "papas fritas envasadas (de copetín)", porcion: "1 paquete chico (aprox. 20 grs.)", creditos: 4, calidad: "rojo" },
+            { id: 684, nombre: "papas fritas sin sal", porcion: "1 taza de té (aprx. 25 gr)", creditos: 4.5, calidad: "rojo" },
+            { id: 685, nombre: "papas light (horneadas)", porcion: "1 paquete chico (aprox. 20 grs.)", creditos: 3, calidad: "rojo" },
+            { id: 686, nombre: "papaya", porcion: "1 unidad chica (aprox. 100 grs.)", creditos: 0.75, calidad: "Verde" },
+            { id: 687, nombre: "paragüitas de chocolate", porcion: "1 unidad (aprox. 12,5 gr)", creditos: 2, calidad: "rojo" },
+            { id: 688, nombre: "pasas de uva", porcion: "1 cucharada sopera (aprox. 10 gr) ó 20 unidades", creditos: 0.75, calidad: "Amarillo" },
+            { id: 689, nombre: "pasas de uva bañadas en chocolate", porcion: "10 unidades", creditos: 1, calidad: "Amarillo" },
+            { id: 690, nombre: "pasta de maní", porcion: "1 tableta chica (aprox. 25 gr)", creditos: 3.75, calidad: "rojo" },
+            { id: 691, nombre: "pastas al huevo (plato playo)", porcion: "1 plato playo (aprox. 70 gr)", creditos: 8.75, calidad: "Amarillo" },
+            { id: 692, nombre: "pastas al huevo (plato postre)", porcion: "1 plato postre (aprox. 33 gr)", creditos: 3.75, calidad: "Amarillo" },
+            { id: 693, nombre: "pastel de papas con aceite", porcion: "1 plato postre (aprox. 150 gr)", creditos: 15, calidad: "Amarillo" },
+            { id: 694, nombre: "pastelitos fritos c/ dulce de memb. o batata", porcion: "1 unidad (aprox. 50 gr)", creditos: 7, calidad: "Amarillo" },
+            { id: 695, nombre: "pastillas light", porcion: "1 unidad", creditos: 0, calidad: "Verde" },
+            { id: 696, nombre: "pastrón", porcion: "1 feta (aprox, 15 gr)", creditos: 0.5, calidad: "Amarillo" },
+            { id: 697, nombre: "paté de foie", porcion: "1 cucharada de postre (aprox. 10 gr)", creditos: 1.25, calidad: "Amarillo" },
+            { id: 698, nombre: "patitas de pollo", porcion: "3 unidades (aprox. 90 gr)", creditos: 5.75, calidad: "Amarillo" },
+            { id: 699, nombre: "pebete de jamón y queso", porcion: "1 unidad", creditos: 7.5, calidad: "Amarillo" },
+            { id: 700, nombre: "Peceto", porcion: "1 rodaja fino", creditos: 0.75, calidad: "Verde" },
+            { id: 701, nombre: "peceto al champiñón", porcion: "3 rodajas finas (150 gr)", creditos: 3, calidad: "Verde" },
+            { id: 702, nombre: "pechuga de pavo con piel", porcion: "1 unidad mediana", creditos: 6, calidad: "Amarillo" },
+            { id: 703, nombre: "pechuga de pavo sin piel", porcion: "1 porción de 150 gr", creditos: 3.75, calidad: "Verde" },
+            { id: 704, nombre: "pechuga de pollo sin piel", porcion: "1 unidad mediana (aprox. 200 gr)", creditos: 3, calidad: "Verde" },
+            { id: 705, nombre: "pelón", porcion: "1 unidad (aprox.100 gr)", creditos: 1.5, calidad: "Verde" },
+            { id: 706, nombre: "pepino", porcion: "1 unidad", creditos: 0, calidad: "Verde" },
+            { id: 707, nombre: "pera (fruta fresca)", porcion: "1 unidad (aprox. 100 grs.)", creditos: 1.25, calidad: "Verde" },
+            { id: 708, nombre: "pera asada", porcion: "1 unidad media. (aprox. 100 gr, 60 Cal)", creditos: 1, calidad: "Verde" },
+            { id: 709, nombre: "peras en almíbar", porcion: "1 mitad (aprox. 50 gr)", creditos: 1.5, calidad: "Verde" },
+            { id: 710, nombre: "peras en almíbar light", porcion: "1 mitad (aprox. 50 gr)", creditos: 1, calidad: "Verde" },
+            { id: 711, nombre: "perejil", porcion: "1 cucharada sopera", creditos: 0, calidad: "Verde" },
+            { id: 712, nombre: "pez espada", porcion: "1 filete grande (aprox. 150 gr)", creditos: 3.5, calidad: "Verde" },
+            { id: 713, nombre: "piñón", porcion: "1 cda. sopera o 60 unidades.", creditos: 2.25, calidad: "rojo" },
+            { id: 714, nombre: "piñones", porcion: "1 cda. sopera o 60 unidades", creditos: 2, calidad: "Amarillo" },
+            { id: 715, nombre: "pistachio", porcion: "1 cda. sopera o 15 unid. (aprox. 10 gr)", creditos: 1.5, calidad: "rojo" },
+            { id: 716, nombre: "pizza a la calabresa c/muzz. y salamín", porcion: "1 porción", creditos: 8.5, calidad: "Amarillo" },
+            { id: 717, nombre: "pizza casera a la piedra con fiambre", porcion: "1 porción", creditos: 7, calidad: "Amarillo" },
+            { id: 718, nombre: "pizza casera c/salsa de tomate y muzzarella light o queso light", porcion: "1 porción", creditos: 5.25, calidad: "Amarillo" },
+            { id: 719, nombre: "pizza de rùculla provolone y panceta", porcion: "1 porciòn", creditos: 9.10, calidad: "Amarillo" },
+            { id: 720, nombre: "pizza integral casera con muzzarella light, tomate y lechuga", porcion: "1 porción", creditos: 3.75, calidad: "Amarillo" },
+            { id: 721, nombre: "pizza integral con acelga y salsa blanca", porcion: "1 porciòn", creditos: 2.25, calidad: "Verde" },
+            { id: 722, nombre: "pizza integral con zapallitos y berenjenas", porcion: "1 porción", creditos: 2.5, calidad: "Verde" },
+            { id: 723, nombre: "pizza muzzarella comprada", porcion: "1 porción", creditos: 9.25, calidad: "Amarillo" },
+            { id: 724, nombre: "pizza s/queso c/salsa de tomates atún y camarones", porcion: "1 porción", creditos: 3.5, calidad: "Verde" },
+            { id: 725, nombre: "pizza s/queso c/salsa de tomates vegetales", porcion: "1 porción", creditos: 3.25, calidad: "Verde" },
+            { id: 726, nombre: "pochoclos", porcion: "1 paquete chico (aprox. 20 gr)", creditos: 3, calidad: "rojo" },
+            { id: 727, nombre: "Polenta ( Harina de Maíz)", porcion: "1 plato postre", creditos: 4, calidad: "Amarillo" },
+            { id: 728, nombre: "polenta instantánea", porcion: "1 plato tamaño postre (aprox. 33 gr)", creditos: 4, calidad: "Amarillo" },
+            { id: 729, nombre: "polenta sola", porcion: "1 plato tipo postre", creditos: 4, calidad: "Amarillo" },
+            { id: 730, nombre: "pollo a la portuguesa", porcion: "1/4 de pollo (aprox.150 grs.)", creditos: 6, calidad: "Amarillo" },
+            { id: 731, nombre: "pollo con piel", porcion: "1/4 pollo", creditos: 9, calidad: "Amarillo" },
+            { id: 732, nombre: "pollo con piel, sin hueso", porcion: "1/4 pollo (aprox. 200 gr)", creditos: 11, calidad: "Amarillo" },
+            { id: 733, nombre: "Pollo sin piel ni hueso", porcion: "1/4 de pollo", creditos: 3, calidad: "Verde" },
+            { id: 734, nombre: "pollo sin piel y sin hueso", porcion: "1 porción de 1/4 de pollo", creditos: 3.5, calidad: "Verde" },
+            { id: 735, nombre: "pollo, muslo sin piel", porcion: "1 unidad mediana", creditos: 2, calidad: "Verde" },
+            { id: 736, nombre: "polvo Royal", porcion: "1 cda. de postre (aprox. 10 gr) 5 cr c/100 gr", creditos: 0.5, calidad: "Amarillo" },
+            { id: 737, nombre: "pomelo", porcion: "1 unidad (aprox. 150 gr)", creditos: 1, calidad: "Verde" },
+            { id: 738, nombre: "porotos", porcion: "1 taza tam. té cocido (33 gr en crudo)", creditos: 2, calidad: "Amarillo" },
+            { id: 739, nombre: "porotos cocidos", porcion: "1 taza tamaño té", creditos: 2, calidad: "Verde" },
+            { id: 740, nombre: "porotos de soja", porcion: "1 taza tam. té cocido (33 gr en crudo)", creditos: 2.25, calidad: "Verde" },
+            { id: 741, nombre: "postre de chocolate c/ d.de leche", porcion: "1 pote chico (aprox. 130 gr)", creditos: 5.25, calidad: "Amarillo" },
+            { id: 742, nombre: "postre de leche", porcion: "1 pote chico", creditos: 4.5, calidad: "Amarillo" },
+            { id: 743, nombre: "postre de leche de chocolate light", porcion: "1 unidad (65 cal.)", creditos: 1, calidad: "Verde" },
+            { id: 744, nombre: "postre de leche light", porcion: "1 pote (aprox. 130 gr)", creditos: 2.5, calidad: "Verde" },
+            { id: 745, nombre: "Postre en polvo producto terminado", porcion: "1 compotera chica", creditos: 4, calidad: "Verde" },
+            { id: 746, nombre: "postre hecho de polvo para postre", porcion: "1 compotera chica (aprox. 120 gr)", creditos: 4, calidad: "Amarillo" },
+            { id: 747, nombre: "Postre Light en polvo", porcion: "1 compotera chica", creditos: 3.5, calidad: "Verde" },
+            { id: 748, nombre: "postre light hecho de polvo para postre", porcion: "1 compotera chica (aprox. 120 gr)", creditos: 3.5, calidad: "Verde" },
+            { id: 749, nombre: "postre Ser de dulce de leche o chocol.", porcion: "1 pote", creditos: 2.5, calidad: "Verde" },
+            { id: 750, nombre: "postre Shimi (no diet)", porcion: "1 pote", creditos: 4.5, calidad: "Amarillo" },
+            { id: 751, nombre: "Postres de leche", porcion: "1 pote chico", creditos: 4.5, calidad: "Verde" },
+            { id: 752, nombre: "producto para copetín promedio", porcion: "1 taza de té", creditos: 4, calidad: "rojo" },
+            { id: 753, nombre: "puerro", porcion: "2 unidades", creditos: 0, calidad: "Verde" },
+            { id: 754, nombre: "puré de calabaza con aceite", porcion: "1 plato postre", creditos: 4.5, calidad: "Verde" },
+            { id: 755, nombre: "puré de papa con aceite", porcion: "1 plato postre", creditos: 6, calidad: "Verde" },
+            { id: 756, nombre: "puré de papa con leche descremada", porcion: "1 plato postre (aprox. 150 gr)", creditos: 3, calidad: "Verde" },
+            { id: 757, nombre: "queso blanco entero", porcion: "2 cucharadas de postre (aprox. 20 g)", creditos: 2, calidad: "Amarillo" },
+            { id: 758, nombre: "queso blanco semidescremado", porcion: "1 cucharada de postre (aprox. 10 g)", creditos: 0.5, calidad: "Amarillo" },
+            { id: 759, nombre: "queso blanco untable, descremado", porcion: "1 cucharada de postre (aprox. 10 g)", creditos: 0.25, calidad: "Verde" },
+            { id: 760, nombre: "queso cheddar", porcion: "1 dadito", creditos: 3.25, calidad: "rojo" },
+            { id: 761, nombre: "Queso crema Blanco entero", porcion: "1 cda.   ostre", creditos: 1, calidad: "Amarillo" },
+            { id: 762, nombre: "queso cremoso light Sancor", porcion: "1 cassette de música (50 gr)", creditos: 2, calidad: "Amarillo" },
+            { id: 763, nombre: "queso cuartirolo", porcion: "1 cassette de música (50 gr)", creditos: 4.5, calidad: "Amarillo" },
+            { id: 764, nombre: "queso cuartirolo descremado Verónica", porcion: "1 cassette de música (50 gr)", creditos: 1, calidad: "Verde" },
+            { id: 765, nombre: "queso dambo magro Cormillot", porcion: "1 feta (aprox. 15 gr)", creditos: 0.75, calidad: "Amarillo" },
+            { id: 766, nombre: "queso de máquina", porcion: "3 fetas (aprox. 30 gr) 3 de 10 gr o 2 de 15 gr", creditos: 2, calidad: "Amarillo" },
+            { id: 767, nombre: "queso en hebras light", porcion: "1 cda. sopera (aprox. 10 gr)", creditos: 0.75, calidad: "Amarillo" },
+            { id: 768, nombre: "queso finlandia light 7%", porcion: "1 cucharada de postre", creditos: 0.75, calidad: "Amarillo" },
+            { id: 769, nombre: "queso fundido entero", porcion: "1 cucharada de postre (10 gr)", creditos: 1, calidad: "Amarillo" },
+            { id: 770, nombre: "queso fundido light", porcion: "1 cucharada de postre (10 gr)", creditos: 0.5, calidad: "Amarillo" },
+            { id: 771, nombre: "queso fundido light en triángulo", porcion: "1 triángulo (aprox. 25 g)", creditos: 1.25, calidad: "Amarillo" },
+            { id: 772, nombre: "queso mini Fimbo", porcion: "1 cassette de música (aprox.50 grs.)", creditos: 5, calidad: "Amarillo" },
+            { id: 773, nombre: "queso mozzarella", porcion: "1 cassette de música (aprox.50 grs.)", creditos: 4.5, calidad: "Amarillo" },
+            { id: 774, nombre: "Queso Muzzarella", porcion: "1 cassette de música", creditos: 3.5, calidad: "Amarillo" },
+            { id: 775, nombre: "Queso Port salut", porcion: "1 cassette de música", creditos: 5, calidad: "Amarillo" },
+            { id: 776, nombre: "queso port salut", porcion: "1 cassette de música (aprox.50 grs.)", creditos: 4.75, calidad: "Amarillo" },
+            { id: 777, nombre: "Queso Port salut l ight", porcion: "1 cassette de músico", creditos: 2, calidad: "Amarillo" },
+            { id: 778, nombre: "queso port salut light", porcion: "1 cassette tamaño audio (aprox.50 gr)", creditos: 2, calidad: "Amarillo" },
+            { id: 779, nombre: "queso port salut light untable", porcion: "1 cda. de postre (aprox. 12 gr)", creditos: 0.25, calidad: "Verde" },
+            { id: 780, nombre: "queso provolone", porcion: "1 cassette de música (aprox. 50 gr)", creditos: 4.75, calidad: "Amarillo" },
+            { id: 781, nombre: "queso rallado", porcion: "1 cda. sopera (aprox. 15 gr)", creditos: 2, calidad: "Amarillo" },
+            { id: 782, nombre: "queso rallado light", porcion: "1 cucharada sopera (aprox. 15 gr)", creditos: 1.5, calidad: "Amarillo" },
+            { id: 783, nombre: "queso ricotta", porcion: "1 cda. tamaño postre (aprox. 10 gr)", creditos: 0.5, calidad: "Amarillo" },
+            { id: 784, nombre: "Queso Ricotta descremado", porcion: "1 cda. postre", creditos: 0.25, calidad: "Verde" },
+            { id: 785, nombre: "queso roquefort", porcion: "1 cassette tamaño audio (aprx. 50 gr)", creditos: 5.75, calidad: "Amarillo" },
+            { id: 786, nombre: "queso tholen light 4%", porcion: "1 cucharada de postre", creditos: 0.5, calidad: "Amarillo" },
+            { id: 787, nombre: "queso tofu", porcion: "1 porción tamaño cassette de música", creditos: 1.5, calidad: "Verde" },
+            { id: 788, nombre: "Queso Untable Blanco descremado", porcion: "1 cda. postre", creditos: 0.25, calidad: "Verde" },
+            { id: 789, nombre: "queso untable Cormillot de Tregar", porcion: "1 porción de 50 gr.", creditos: 1.5, calidad: "Verde" },
+            { id: 790, nombre: "queso untable descremado", porcion: "1 cda. tamaño postre (aprox. 10 gr)", creditos: 0.25, calidad: "Verde" },
+            { id: 791, nombre: "queso untable entero", porcion: "1 cda. tamaño postre (aprox. 10 gr)", creditos: 1, calidad: "Amarillo" },
+            { id: 792, nombre: "queso untable port salut Sancor", porcion: "1 cucharada tipo postre (10 gr)", creditos: 0.25, calidad: "Verde" },
+            { id: 793, nombre: "quinoa", porcion: "1 cucharada sopera ( aprox 10 gr)", creditos: 0.75, calidad: "Amarillo" },
+            { id: 794, nombre: "rabanito", porcion: "1 unidad (aprox. 20 gr)", creditos: 0, calidad: "Verde" },
+            { id: 795, nombre: "radicheta", porcion: "1 plato de postre (aprx.50 gr)", creditos: 0, calidad: "Verde" },
+            { id: 796, nombre: "ravioles de pollo", porcion: "1 plato tamaño postre (aprx.60 gr)", creditos: 4, calidad: "Amarillo" },
+            { id: 797, nombre: "Ravioles de ricota y espinaca", porcion: "1 plato postre", creditos: 4, calidad: "Amarillo" },
+            { id: 798, nombre: "ravioles de ricota y espinaca c/ manteca y queso", porcion: "1 plato abundante (aprox. 200 gr)", creditos: 20.75, calidad: "Amarillo" },
+            { id: 799, nombre: "Ravioles de ricota y espinaca light", porcion: "1 plato postre", creditos: 3, calidad: "Amarillo" },
+            { id: 800, nombre: "ravioles de ricotta y espinaca (p. playo)", porcion: "1 plato playo abundante (aprx.180 gr)", creditos: 14.25, calidad: "Amarillo" },
+            { id: 801, nombre: "ravioles de ricotta y espinaca (p. postre)", porcion: "1 plato de postre (aprx.60 gr)", creditos: 4.75, calidad: "Amarillo" },
+            { id: 802, nombre: "ravioles de ricotta y espinaca light", porcion: "1 plato de postre", creditos: 3, calidad: "Amarillo" },
+            { id: 803, nombre: "ravioles de soja light Cormillot", porcion: "1 plato (aprox. 60gr)", creditos: 2.75, calidad: "Amarillo" },
+            { id: 804, nombre: "rebozador c/ germen de trigo y avena", porcion: "3 cucharadas soperas (aprox. 30 gr)", creditos: 2.25, calidad: "Amarillo" },
+            { id: 805, nombre: "rebozador integral", porcion: "1 cucharada sopera (aprox. 10 gr)", creditos: 1.25, calidad: "Amarillo" },
+            { id: 806, nombre: "Remolacha", porcion: "1 unidad chica", creditos: 0.5, calidad: "Verde" },
+            { id: 807, nombre: "remolacha (hortaliza)", porcion: "1 unidad chica (aprox. 60 gr)", creditos: 1, calidad: "Verde" },
+            { id: 808, nombre: "remolacha (jugo)", porcion: "1 vaso (aprox. 60 gr)", creditos: 0.5, calidad: "Verde" },
+            { id: 809, nombre: "remolacha enlatada", porcion: "1 plato postre", creditos: 1.75, calidad: "Verde" },
+            { id: 810, nombre: "repollitos de bruselas", porcion: "1 taza grande en cocido", creditos: 0, calidad: "Verde" },
+            { id: 811, nombre: "repollo", porcion: "1 plato de postre", creditos: 0, calidad: "Verde" },
+            { id: 812, nombre: "ricota", porcion: "1 cda. tamaño postre (aprox 10 gr)", creditos: 0.5, calidad: "Amarillo" },
+            { id: 813, nombre: "ricota descremada", porcion: "1 cda. tamaño postre (aprox 10 gr)", creditos: 0.25, calidad: "Verde" },
+            { id: 814, nombre: "Riñon", porcion: "1 unidad chica", creditos: 1, calidad: "Verde" },
+            { id: 815, nombre: "riñón", porcion: "1 unidad chica (aprox.50 grs.)", creditos: 1.5, calidad: "Verde" },
+            { id: 816, nombre: "risotto", porcion: "1 plato de postre (100 gr)", creditos: 8, calidad: "Amarillo" },
+            { id: 817, nombre: "risotto (revista de febrero 2006)", porcion: "1 plato de postre (150 gr)", creditos: 12, calidad: "Amarillo" },
+            { id: 818, nombre: "rocío vegetal", porcion: "1 segundo de rociado (aprox. 0,5 gr)", creditos: 0, calidad: "Verde" },
+            { id: 819, nombre: "rogel", porcion: "1 porción mediana (150 gr)", creditos: 12, calidad: "Amarillo" },
+            { id: 820, nombre: "rollito de dulce de leche bañado en chocolate", porcion: "1 unidad (aprox. 25 gr)", creditos: 3, calidad: "Amarillo" },
+            { id: 821, nombre: "rosca de pascua", porcion: "1 rodaja chica", creditos: 7, calidad: "Amarillo" },
+            { id: 822, nombre: "rúcula", porcion: "1 plato postre (aprox. 50 gr)", creditos: 0, calidad: "Verde" },
+            { id: 823, nombre: "rueda de chocol. semiamargo relleno c/menta", porcion: "1 unidad de aprox.18 gr", creditos: 2.75, calidad: "rojo" },
+            { id: 824, nombre: "rueda de chocolate semiamargo c/ relleno de yogurt de frutilla", porcion: "1 unidad de aprox.18 gr", creditos: 2.5, calidad: "Amarillo" },
+            { id: 825, nombre: "salame", porcion: "1 feta (aprox. 25 grs.)", creditos: 3.25, calidad: "Amarillo" },
+            { id: 826, nombre: "Salchicha", porcion: "1 unidad", creditos: 3, calidad: "Amarillo" },
+            { id: 827, nombre: "salchicha común", porcion: "1 unidad (aprox. 40 gr) (9 cr c/ 100 gr)", creditos: 3.5, calidad: "Amarillo" },
+            { id: 828, nombre: "salchicha de soja", porcion: "1 unidad", creditos: 0.75, calidad: "Verde" },
+            { id: 829, nombre: "salchicha light", porcion: "1 unidad (aprox. 33 gr) (3,25 cr c/ 100 gr)", creditos: 1.25, calidad: "Amarillo" },
+            { id: 830, nombre: "salchicha parrillera", porcion: "1 unidad (aprox. 60 gr)", creditos: 8.5, calidad: "Amarillo" },
+            { id: 831, nombre: "salmón", porcion: "1 filet grande", creditos: 3, calidad: "Verde" },
+            { id: 832, nombre: "salmón al natural", porcion: "1 lata chica", creditos: 3, calidad: "Verde" },
+            { id: 833, nombre: "salsa barbacoa", porcion: "1 cda tamaño postre (aprox 10 gr)", creditos: 0, calidad: "Verde" },
+            { id: 834, nombre: "salsa bolognesa", porcion: "2 cucharadas soperas (aprox. 30 gr)", creditos: 2, calidad: "Amarillo" },
+            { id: 835, nombre: "salsa de soja", porcion: "1 cda. tamaño postre (aprox 10 gr)", creditos: 0, calidad: "Verde" },
+            { id: 836, nombre: "salsa fileto", porcion: "1 cucharada sopera (aprox. 15 gr)", creditos: 0.25, calidad: "Verde" },
+            { id: 837, nombre: "salsa fileto en polvo lista p' consumir", porcion: "1 cucharada sopera (aprox. 15 gr)", creditos: 0, calidad: "Verde" },
+            { id: 838, nombre: "salsa golf", porcion: "1 cda. sopera (aprox 15 gr)", creditos: 3.25, calidad: "rojo" },
+            { id: 839, nombre: "salsa golf light", porcion: "1 cucharada de postre (aprox 10 gr)", creditos: 1, calidad: "Amarillo" },
+            { id: 840, nombre: "salsa pesto", porcion: "1 cucharada sopera", creditos: 2.5, calidad: "rojo" },
+            { id: 841, nombre: "salsa portuguesa", porcion: "1 cucharada sopera (aprox. 15 gr)", creditos: 0.25, calidad: "Verde" },
+            { id: 842, nombre: "salsa portuguesa light", porcion: "1 cucharada sopera (aprox. 15 gr)", creditos: 0, calidad: "Verde" },
+            { id: 843, nombre: "salvado de avena", porcion: "1 cucharada sopera (aprox. 10 gr)", creditos: 0.75, calidad: "Amarillo" },
+            { id: 844, nombre: "salvado de trigo", porcion: "1 cucharada sopera (aprox. 10 gr)", creditos: 0.5, calidad: "Amarillo" },
+            { id: 845, nombre: "sandía", porcion: "1 taj. de 2 dedos de ancho (Apr.100 gr)", creditos: 0.75, calidad: "rojo" },
+            { id: 846, nombre: "sándwich de miga integral de jamón y queso Cormillot", porcion: "1 unidad (aprox. 40 gr)", creditos: 2, calidad: "Amarillo" },
+            { id: 847, nombre: "sándwich de pan árabe integral (4,5) c/ 1 cassette de queso port salut light (2) + 1 tomate y hojas de albahaca (0)", porcion: "1 sandwich", creditos: 6.5, calidad: "Verde" },
+            { id: 848, nombre: "sándwich de pan lactal integral (3,5) c/ 1 lata atún al natural (0,75) + zanahoria rallada (0,25) + 1 cda. de mayon. light (1)", porcion: "1 sandwich", creditos: 5.5, calidad: "Verde" },
+            { id: 849, nombre: "sándwich de pan lactal integral (3,5) c/ berenjena a la milanesa (0) + 1/2 huevo duro (1) + hojas de lechuga (0) + 2 cdas. de ketchup (0)", porcion: "1 sandwich", creditos: 4.5, calidad: "Verde" },
+            { id: 850, nombre: "sándwich tostado de jamón y queso", porcion: "1 triangulito", creditos: 5, calidad: "Amarillo" },
+            { id: 851, nombre: "sardina en aceite", porcion: "1 porción de 100 gr", creditos: 5, calidad: "Amarillo" },
+            { id: 852, nombre: "semillas de girasol (pipas)", porcion: "1 cucharada sopera (aprox. 5 gr)", creditos: 1, calidad: "rojo" },
+            { id: 853, nombre: "semillas de girasol confitadas", porcion: "1 cucharada soperas (aprox. 16 gr)", creditos: 2.5, calidad: "rojo" },
+            { id: 854, nombre: "Semillas promedio", porcion: "1 cda sopera", creditos: 1, calidad: "Amarillo" },
+            { id: 855, nombre: "semillitas de chía", porcion: "1 cucharada sopera (aprox. 10 g)", creditos: 0.5, calidad: "Amarillo" },
+            { id: 856, nombre: "semillitas de lino", porcion: "1 cucharada sopera (aprox 10 g)", creditos: 1, calidad: "Amarillo" },
+            { id: 857, nombre: "semillitas de sésamo", porcion: "1 cucharada sopera (aprox. 5 gr)", creditos: 0.75, calidad: "rojo" },
+            { id: 858, nombre: "seso", porcion: "1 unidad chica (aprox. 50 gr)", creditos: 2, calidad: "Amarillo" },
+            { id: 859, nombre: "sidra", porcion: "1 copa (aprox. 150 cm3)", creditos: 1.75, calidad: "Verde" },
+            { id: 860, nombre: "Sidra Light", porcion: "1 copa", creditos: 0.5, calidad: "Verde" },
+            { id: 861, nombre: "sidra light", porcion: "1 copa (100 cm3)", creditos: 0.5, calidad: "Verde" },
+            { id: 862, nombre: "Snacks para copetin", porcion: "1 taza de Té", creditos: 4, calidad: "Rojo" },
+            { id: 863, nombre: "soja enlatada", porcion: "1 taza tamaño té (aprox 33 gr)", creditos: 1.5, calidad: "Amarillo" },
+            { id: 864, nombre: "soja natural, bebida", porcion: "1 vaso", creditos: 2, calidad: "Verde" },
+            { id: 865, nombre: "sopa crema", porcion: "1 taza (aprox. 200 cm3)", creditos: 2.25, calidad: "Verde" },
+            { id: 866, nombre: "sopa crema batido Cormillot", porcion: "1 vaso (aprox. 240 cm3)", creditos: 2.75, calidad: "Verde" },
+            { id: 867, nombre: "sopa crema Knorr de espárragos", porcion: "1 porción de 16,3 gr (2 cdas. Soperas)", creditos: 1.25, calidad: "Verde" },
+            { id: 868, nombre: "sopa de calabaza", porcion: "1 taza tamaño té", creditos: 2, calidad: "Verde" },
+            { id: 869, nombre: "Sopa instantanea Reconstituida", porcion: "1 taza de té", creditos: 2, calidad: "Verde" },
+            { id: 870, nombre: "sopa instantánea reconstituida", porcion: "1 taza tamaño té", creditos: 2, calidad: "Verde" },
+            { id: 871, nombre: "sopa Knorr Quick light (tomate, vegetales, zapallo, arvejas, etc)", porcion: "1 porción de 11 gr", creditos: 0, calidad: "Verde" },
+            { id: 872, nombre: "sopa light", porcion: "1 taza grande (aprox 200 gr)", creditos: 0.75, calidad: "Verde" },
+            { id: 873, nombre: "spaguetti c/ salsa, ajo y albahaca", porcion: "1 plato tam. postre en cocido(apx.230 gr)", creditos: 4.75, calidad: "Amarillo" },
+            { id: 874, nombre: "stop calory chocolate c/ leche descr.", porcion: "1 vaso (aprox. 230 gr)", creditos: 2.5, calidad: "Verde" },
+            { id: 875, nombre: "sundae de frutilla", porcion: "1 porción (aprox. 180 gr)", creditos: 8.5, calidad: "Amarillo" },
+            { id: 876, nombre: "suprema al champiñón", porcion: "1 unidad chica (100 gr)", creditos: 5.5, calidad: "Amarillo" },
+            { id: 877, nombre: "surimi (kani-kama)", porcion: "1 unidad (aprox. 18 gr)", creditos: 0.25, calidad: "Verde" },
+            { id: 878, nombre: "sushi", porcion: "1 unidades (200 gr)", creditos: 5, calidad: "Verde" },
+            { id: 879, nombre: "tableta de dulc. de leche cub. con", porcion: "1 unidad (aprox. 25 gr)", creditos: 2.5, calidad: "Amarillo" },
+            { id: 880, nombre: "tableta de dulc. de leche light", porcion: "1 unidad (aprox. 25 gr)", creditos: 1.75, calidad: "Amarillo" },
+            { id: 881, nombre: "taco mexicano", porcion: "1 unidad", creditos: 6, calidad: "Amarillo" },
+            { id: 882, nombre: "tapa de nalga (vaca)", porcion: "1 rodaja (aprox. 150 gr)", creditos: 5.75, calidad: "Amarillo" },
+            { id: 883, nombre: "Tapa Masa de canelon", porcion: "1 unidad", creditos: 3, calidad: "Amarillo" },
+            { id: 884, nombre: "Tapa masa de tarta", porcion: "1 porcion con una tapa", creditos: 3, calidad: "Amarillo" },
+            { id: 885, nombre: "tarta de acelga con 1 sola tapa", porcion: "1 porción (1/8 de tarta)", creditos: 4, calidad: "Amarillo" },
+            { id: 886, nombre: "tarta de atún c/ 1 tapa", porcion: "1 porción c/ 1 tapa", creditos: 3, calidad: "Verde" },
+            { id: 887, nombre: "tarta de jamón y queso", porcion: "1 porción", creditos: 13, calidad: "Amarillo" },
+            { id: 888, nombre: "tarta de manzana", porcion: "1 porción chica (aprox.100 grs.)", creditos: 7, calidad: "Amarillo" },
+            { id: 889, nombre: "tarta de manzana light", porcion: "1 porción chica (aprox.100 grs.)", creditos: 2.5, calidad: "Verde" },
+            { id: 890, nombre: "tarta de merengue y crema", porcion: "1 porción (aprox.150 grs.)", creditos: 12, calidad: "Amarillo" },
+            { id: 891, nombre: "tarta de queso y cebolla c/ 2 tapas", porcion: "1 porción (1/8 de tarta c/ 2 tapa)", creditos: 15, calidad: "Amarillo" },
+            { id: 892, nombre: "tarta de ricota, la comprada en confitería", porcion: "1 porción de 140 gr", creditos: 18.5, calidad: "Amarillo" },
+            { id: 893, nombre: "tarta de vigilia light", porcion: "1/8 tarta", creditos: 9.5, calidad: "Amarillo" },
+            { id: 894, nombre: "tarta de zapallito", porcion: "1 porción (1/8 de tarta c/ 1 tapa)", creditos: 2, calidad: "Verde" },
+            { id: 895, nombre: "tarta de zapallo con 1 sola tapa", porcion: "1 porción (1/8 de tarta)", creditos: 4, calidad: "Amarillo" },
+            { id: 896, nombre: "tarta de zapallo light, con 1 sola tapa", porcion: "1 porción (1/8 de tarta)", creditos: 3, calidad: "Verde" },
+            { id: 897, nombre: "tarta individual) de frutos del bosque", porcion: "1 unidad de 42 gr", creditos: 4.5, calidad: "Amarillo" },
+            { id: 898, nombre: "Tic - Tac (confititos)", porcion: "1 cajita", creditos: 2, calidad: "Amarillo" },
+            { id: 899, nombre: "tira de asado", porcion: "1 tira de 3 huesos (aprox. 150 gr)", creditos: 19.5, calidad: "Amarillo" },
+            { id: 900, nombre: "tira de asado magro", porcion: "1 tira de 3 huesos", creditos: 7.5, calidad: "Amarillo" },
+            { id: 901, nombre: "Tira de asado magro.", porcion: "1 tira de 3 huesos", creditos: 7.5, calidad: "Amarillo" },
+            { id: 902, nombre: "tofu", porcion: "1 cassette tamaño audio (aprox 50 gr)", creditos: 1.5, calidad: "Verde" },
+            { id: 903, nombre: "tomate", porcion: "1 unidad chica (aprox. 100 gr)", creditos: 0, calidad: "Verde" },
+            { id: 904, nombre: "tomate perita", porcion: "1 unidad chica", creditos: 0, calidad: "Verde" },
+            { id: 905, nombre: "tomate perita pelado enlatado", porcion: "1 unidad", creditos: 0, calidad: "Verde" },
+            { id: 906, nombre: "tomate relleno c/ atún", porcion: "2 unidades", creditos: 2, calidad: "Verde" },
+            { id: 907, nombre: "tomate relleno de atún al natural", porcion: "1 unidad", creditos: 1, calidad: "Verde" },
+            { id: 908, nombre: "torta Rogel", porcion: "1 porción mediana (150 gr)", creditos: 12, calidad: "Amarillo" },
+            { id: 909, nombre: "tortilla de acelga con aceite", porcion: "1/4 de tortilla (150 gr)", creditos: 4.5, calidad: "Verde" },
+            { id: 910, nombre: "tortilla de acelga en rocío vegetal", porcion: "1/4 de tortilla chica", creditos: 0.5, calidad: "Verde" },
+            { id: 911, nombre: "tortilla de papa con aceite", porcion: "1/4 de tortilla (150 gr)", creditos: 9, calidad: "Amarillo" },
+            { id: 912, nombre: "tostada light", porcion: "1 unidad", creditos: 0.75, calidad: "Amarillo" },
+            { id: 913, nombre: "tostadas clásicas", porcion: "1 unidad", creditos: 0.75, calidad: "Amarillo" },
+            { id: 914, nombre: "Tostadas de gluten", porcion: "1 unidad", creditos: 0.75, calidad: "Amarillo" },
+            { id: 915, nombre: "tostadas de mesa", porcion: "1 unidad (aprox. 6,5 grs.)", creditos: 0.5, calidad: "Amarillo" },
+            { id: 916, nombre: "tostadas integrales", porcion: "1 unidad (aprox. 6 grs.)", creditos: 0.5, calidad: "Amarillo" },
+            { id: 917, nombre: "tostadas integrales de gluten", porcion: "2 tostadas (aprox. 6 grs. c/u)", creditos: 1.25, calidad: "Verde" },
+            { id: 918, nombre: "tostadas marca SER común o salvado", porcion: "1 unidad", creditos: 0.75, calidad: "Amarillo" },
+            { id: 919, nombre: "tostaditas twistos", porcion: "1 paquete chico de 40 gr", creditos: 4, calidad: "Amarillo" },
+            { id: 920, nombre: "tostado (sándwich tostado)", porcion: "1 triangulito", creditos: 5, calidad: "Amarillo" },
+            { id: 921, nombre: "Tpa masa de tarta light", porcion: "1 porcion con una tapa", creditos: 2, calidad: "Amarillo" },
+            { id: 922, nombre: "trigo burgol", porcion: "1 taza de té en cocido", creditos: 2, calidad: "Amarillo" },
+            { id: 923, nombre: "trigo candela", porcion: "1 plato de postre", creditos: 4, calidad: "Amarillo" },
+            { id: 924, nombre: "trigo inflado", porcion: "1 paquete chico ó 1 taza de té", creditos: 2.5, calidad: "Amarillo" },
+            { id: 925, nombre: "trucha", porcion: "1 unidad (150 gr)", creditos: 1.5, calidad: "Verde" },
+            { id: 926, nombre: "turrón de almendra", porcion: "1 trozo mediano (aprox. 25 gr)", creditos: 3.5, calidad: "Amarillo" },
+            { id: 927, nombre: "turrón de cereal bañado en chocolate", porcion: "1 unidad (aprox. 22 gr)", creditos: 3, calidad: "Amarillo" },
+            { id: 928, nombre: "Turron de mani", porcion: "1 unidad", creditos: 4, calidad: "Amarillo" },
+            { id: 929, nombre: "turrón de maní", porcion: "1 trozo mediano (aprox. 25 gr)", creditos: 3.25, calidad: "Amarillo" },
+            { id: 930, nombre: "turrón marca Miski", porcion: "1 unidad", creditos: 3.25, calidad: "rojo" },
+            { id: 931, nombre: "twistos tostaditas", porcion: "1 paquete chico de 40 gr", creditos: 4, calidad: "Amarillo" },
+            { id: 932, nombre: "Uva", porcion: "1 taza de te", creditos: 2.5, calidad: "Verde" },
+            { id: 933, nombre: "uvas", porcion: "1 taza de té (aprox. 150 grs.)", creditos: 2.25, calidad: "Verde" },
+            { id: 934, nombre: "Vacío", porcion: "1 rodaja gruesa", creditos: 7.5, calidad: "Amarillo" },
+            { id: 935, nombre: "vainillas", porcion: "1 unidad (aprox. 15 gr)", creditos: 1.75, calidad: "Amarillo" },
+            { id: 936, nombre: "Vermouth", porcion: "1  vaso", creditos: 3, calidad: "Verde" },
+            { id: 937, nombre: "vermouth (promedio)", porcion: "1 vaso (aprox. 100 cm3)", creditos: 2.5, calidad: "Verde" },
+            { id: 938, nombre: "vinagre", porcion: "1 cucharada de postre", creditos: 0, calidad: "Verde" },
+            { id: 939, nombre: "vino blanco", porcion: "1 vaso o copa (aprox. 150 cm3)", creditos: 2.75, calidad: "Verde" },
+            { id: 940, nombre: "Vino Blanco o Tinto", porcion: "1 vaso o copa", creditos: 3, calidad: "Verde" },
+            { id: 941, nombre: "vino jerez dulce", porcion: "1 medida (aprox. 50 cm3)", creditos: 1.75, calidad: "Amarillo" },
+            { id: 942, nombre: "vino tinto", porcion: "1 vaso o copa (aprox. 150 cm3)", creditos: 2.25, calidad: "Verde" },
+            { id: 943, nombre: "vitel thoné", porcion: "2 rodajas", creditos: 6, calidad: "Amarillo" },
+            { id: 944, nombre: "whisky", porcion: "1 medida (aprox. 50 cm3)", creditos: 2.75, calidad: "Amarillo" },
+            { id: 945, nombre: "Whisky Promedio", porcion: "1 medida", creditos: 3, calidad: "Amarillo" },
+            { id: 946, nombre: "yema de huevo", porcion: "1 unidad (aprox. 15 gr)", creditos: 1.75, calidad: "Amarillo" },
+            { id: 947, nombre: "Yogur descremado", porcion: "1 pote", creditos: 1, calidad: "Verde" },
+            { id: 948, nombre: "Yogur descremado con cereales", porcion: "1 pote", creditos: 3, calidad: "Verde" },
+            { id: 949, nombre: "Yogur descremado con frutas", porcion: "1 pote", creditos: 2, calidad: "Verde" },
+            { id: 950, nombre: "Yogur entero", porcion: "1 pote", creditos: 4, calidad: "Verde" },
+            { id: 951, nombre: "Yogur entero con cereales", porcion: "1 pote", creditos: 7, calidad: "Verde" },
+            { id: 952, nombre: "Yogur entero con frutas", porcion: "1 pote", creditos: 5, calidad: "Verde" },
+            { id: 953, nombre: "yogurt bebible descremado", porcion: "1 vaso (aprox. 200 cm3)", creditos: 1, calidad: "Verde" },
+            { id: 954, nombre: "yogurt descremado", porcion: "1 pote (aprox. 200 gr)", creditos: 0.75, calidad: "Verde" },
+            { id: 955, nombre: "yogurt descremado con cereales", porcion: "1 pote", creditos: 3, calidad: "Verde" },
+            { id: 956, nombre: "yogurt descremado con frutas", porcion: "1 pote (aprox. 200 gr)", creditos: 1.75, calidad: "Verde" },
+            { id: 957, nombre: "yogurt descremado con frutas y cereales", porcion: "1 pote (aprox. 183 gr)", creditos: 3.25, calidad: "Verde" },
+            { id: 958, nombre: "yogurt descremado con muesli", porcion: "1 pote", creditos: 3, calidad: "Verde" },
+            { id: 959, nombre: "yogurt descremado Ser o Sancor", porcion: "1 unidad de 125 gr", creditos: 1, calidad: "Verde" },
+            { id: 960, nombre: "yogurt entero", porcion: "1 pote (aprox. 200 gr)", creditos: 3.25, calidad: "Verde" },
+            { id: 961, nombre: "yogurt entero con cereales", porcion: "1 pote (aprox. 200 gr)", creditos: 6.75, calidad: "Amarillo" },
+            { id: 962, nombre: "yogurt entero con frutas", porcion: "1 pote", creditos: 5, calidad: "Verde" },
+            { id: 963, nombre: "yogurt Ser lemon pie", porcion: "1 pote", creditos: 2, calidad: "Verde" },
+            { id: 964, nombre: "yogurt Ser manzana", porcion: "1 pote", creditos: 2, calidad: "Verde" },
+            { id: 965, nombre: "zanahoria", porcion: "1 unidad chica (aprox. 100 grs.)", creditos: 0.75, calidad: "Verde" },
+            { id: 966, nombre: "zapallito redondo", porcion: "1 tza tamaño té en cocido", creditos: 0, calidad: "Verde" },
+            { id: 967, nombre: "zapallito zuchini", porcion: "1 unidad mediana", creditos: 0, calidad: "Verde" }
+        ];
+
+        let currentFilter = 'todos';
+        let searchTerm = '';
+        let quantities = {};
+
+        function renderFoods() {
+            const foodList = document.getElementById('foodList');
+            const noResults = document.getElementById('noResults');
+            const countSpan = document.getElementById('count');
+            
+            let filtered = alimentos.filter(food => {
+                const matchesSearch = food.nombre.toLowerCase().includes(searchTerm.toLowerCase());
+                const matchesColor = currentFilter === 'todos' || food.calidad.toLowerCase() === currentFilter;
+                return matchesSearch && matchesColor;
+            });
+
+            countSpan.textContent = filtered.length;
+
+            if (filtered.length === 0) {
+                foodList.innerHTML = '';
+                noResults.style.display = 'block';
+                return;
+            } else {
+                noResults.style.display = 'none';
+            }
+
+            foodList.innerHTML = filtered.map(food => {
+                const qty = quantities[food.id] || 0;
+                const subtotal = (qty * food.creditos).toFixed(2);
+                
+                return `
+                <div class="food-card ${food.calidad.toLowerCase()}">
+                    <div class="food-info">
+                        <div class="food-name">${food.nombre}</div>
+                        <div class="food-portion">${food.porcion}</div>
+                        <span class="quality-badge badge-${food.calidad.toLowerCase()}">${food.calidad}</span>
+                        
+                        <div class="quantity-control">
+                            <button class="btn-quantity" onclick="updateQuantity(${food.id}, -1)">−</button>
+                            <span class="quantity-display" id="qty-${food.id}">${qty}</span>
+                            <button class="btn-quantity" onclick="updateQuantity(${food.id}, 1)">+</button>
+                        </div>
+                        ${qty > 0 ? `<div class="subtotal">Subtotal: ${subtotal} créditos</div>` : ''}
+                    </div>
+                    <div class="food-credits">
+                        <div class="credits-number">${food.creditos}</div>
+                        <div class="credits-label">c/u</div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+
+            updateSelectedSection();
+        }
+
+        function updateQuantity(id, change) {
+            const currentQty = quantities[id] || 0;
+            const newQty = currentQty + change;
+            
+            if (newQty < 0) return;
+            
+            if (newQty === 0) {
+                delete quantities[id];
+            } else {
+                quantities[id] = newQty;
+            }
+            
+            renderFoods();
+            updateTotal();
+        }
+
+        function updateTotal() {
+            let total = 0;
+            for (let id in quantities) {
+                const food = alimentos.find(a => a.id === parseInt(id));
+                if (food) {
+                    total += quantities[id] * food.creditos;
+                }
+            }
+            document.getElementById('totalCredits').textContent = total.toFixed(2);
+        }
+
+        function updateSelectedSection() {
+            const section = document.getElementById('selectedSection');
+            const list = document.getElementById('selectedList');
+            const selectedIds = Object.keys(quantities).filter(id => quantities[id] > 0);
+            
+            if (selectedIds.length === 0) {
+                section.classList.remove('has-items');
+                return;
+            }
+            
+            section.classList.add('has-items');
+            
+            list.innerHTML = selectedIds.map(id => {
+                const food = alimentos.find(a => a.id === parseInt(id));
+                const qty = quantities[id];
+                const subtotal = (qty * food.creditos).toFixed(2);
+                
+                return `
+                    <div class="selected-item">
+                        <div class="selected-item-info">
+                            <div class="selected-item-name">${food.nombre}</div>
+                            <div class="selected-item-details">${qty} × ${food.creditos} créditos</div>
+                        </div>
+                        <div class="selected-item-credits">${subtotal}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function clearAll() {
+            if (Object.keys(quantities).length === 0) return;
+            
+            if (confirm('¿Estás seguro de que querés limpiar toda la selección?')) {
+                quantities = {};
+                renderFoods();
+                updateTotal();
+            }
+        }
+
+        function filterByColor(color) {
+            currentFilter = color;
+            
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            renderFoods();
+        }
+
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            searchTerm = e.target.value;
+            renderFoods();
+        });
+
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js')
+                .then(reg => console.log('Service Worker registrado'))
+                .catch(err => console.log('Error al registrar Service Worker', err));
+        }
+
+        renderFoods();
+    </script>
+</body>
+</html>
