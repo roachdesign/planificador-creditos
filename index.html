@@ -1369,16 +1369,27 @@
         let searchTerm = '';
         let quantities = {};
 
-        function renderFoods() {
-            const foodList = document.getElementById('foodList');
-            const noResults = document.getElementById('noResults');
-            const countSpan = document.getElementById('count');
-            
-            let filtered = alimentos.filter(food => {
-                const matchesSearch = food.nombre.toLowerCase().includes(searchTerm.toLowerCase());
-                const matchesColor = currentFilter === 'todos' || food.calidad.toLowerCase() === currentFilter;
-                return matchesSearch && matchesColor;
-            });
+        function normalizeText(text) {
+    return text.toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+}
+
+function renderFoods() {
+    const foodList = document.getElementById('foodList');
+    const noResults = document.getElementById('noResults');
+    const countSpan = document.getElementById('count');
+    
+    // Normalizamos el término de búsqueda (quitamos tildes)
+    const normalizedSearch = normalizeText(searchTerm);
+    
+    let filtered = alimentos.filter(food => {
+        // Normalizamos el nombre del alimento también
+        const normalizedName = normalizeText(food.nombre);
+        const matchesSearch = normalizedName.includes(normalizedSearch);
+        const matchesColor = currentFilter === 'todos' || food.calidad.toLowerCase() === currentFilter;
+        return matchesSearch && matchesColor;
+    });
 
             countSpan.textContent = filtered.length;
 
@@ -1511,4 +1522,5 @@
         renderFoods();
     </script>
 </body>
+
 </html>
